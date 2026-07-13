@@ -1,0 +1,105 @@
+{
+  "project": {
+    "name": "xmole2",
+    "version": "0.1.0",
+    "description": "Cross-platform Office document processing library in C++23"
+  },
+  "dependencies": [
+    {
+      "name": "BqLog",
+      "version": "2.3.1",
+      "repository": "https://github.com/Tencent/BqLog.git",
+      "homepage": "https://github.com/Tencent/BqLog",
+      "license": "Apache-2.0",
+      "purpose": "Optional high-performance logging backend"
+    },
+    {
+      "name": "abseil",
+      "version": "20250814.1",
+      "repository": "https://github.com/abseil/abseil-cpp.git",
+      "homepage": "https://abseil.io/",
+      "license": "Apache-2.0",
+      "purpose": "High-performance complements to standard containers, strings, and algorithms"
+    },
+    {
+      "name": "boost-uuid",
+      "version": "1.90.0#1",
+      "repository": "https://github.com/boostorg/uuid.git",
+      "homepage": "https://www.boost.org/doc/libs/1_90_0/libs/uuid/",
+      "license": "BSL-1.0",
+      "purpose": "UUID generation and representation"
+    },
+    {
+      "name": "fmt",
+      "version": "12.1.0",
+      "repository": "https://github.com/fmtlib/fmt.git",
+      "homepage": "https://fmt.dev/",
+      "license": "MIT",
+      "purpose": "Internal string formatting and diagnostics"
+    },
+    {
+      "name": "frozen",
+      "version": "1.2.0",
+      "repository": "https://github.com/serge-sans-paille/frozen.git",
+      "homepage": "https://github.com/serge-sans-paille/frozen",
+      "license": "Apache-2.0",
+      "purpose": "Compile-time constexpr containers for immutable lookup tables"
+    },
+    {
+      "name": "gtest",
+      "version": "1.17.0#2",
+      "repository": "https://github.com/google/googletest.git",
+      "homepage": "https://github.com/google/googletest",
+      "license": "BSD-3-Clause",
+      "purpose": "Test framework"
+    },
+    {
+      "name": "magic-enum",
+      "version": "0.9.7#1",
+      "repository": "https://github.com/Neargye/magic_enum.git",
+      "homepage": "https://github.com/Neargye/magic_enum",
+      "license": "MIT",
+      "purpose": "Compile-time enum utilities"
+    },
+    {
+      "name": "minizip-ng",
+      "version": "4.0.10#1",
+      "repository": "https://github.com/zlib-ng/minizip-ng.git",
+      "homepage": "https://github.com/zlib-ng/minizip-ng",
+      "license": "BSD-3-Clause",
+      "purpose": "ZIP container backend"
+    },
+    {
+      "name": "openssl",
+      "version": "3.6.0#3",
+      "repository": "https://github.com/openssl/openssl.git",
+      "homepage": "https://www.openssl.org/",
+      "license": "Apache-2.0",
+      "purpose": "Cryptographic primitives for encryption and decryption"
+    },
+    {
+      "name": "pugixml",
+      "version": "1.15#1",
+      "repository": "https://github.com/zeux/pugixml.git",
+      "homepage": "https://pugixml.org/",
+      "license": "MIT",
+      "purpose": "XML parsing backend"
+    },
+    {
+      "name": "re2",
+      "version": "2025-11-05",
+      "repository": "https://github.com/google/re2.git",
+      "homepage": "https://github.com/google/re2",
+      "license": "BSD-3-Clause",
+      "purpose": "Predictable regular-expression matching"
+    },
+    {
+      "name": "simdutf",
+      "version": "8.0.0",
+      "repository": "https://github.com/simdutf/simdutf.git",
+      "homepage": "https://simdutf.github.io/simdutf/",
+      "license": "Apache-2.0",
+      "purpose": "SIMD-accelerated Unicode validation and transcoding for XML input paths"
+    }
+  ]
+}

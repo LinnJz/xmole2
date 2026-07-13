@@ -1,0 +1,215 @@
+﻿# https://tqfx.org/clang-format/BasedOnStyle/?h=basedonstyle
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+---
+# start
+Language: Cpp
+Standard: Latest
+BasedOnStyle: Google
+#LineEndingStyle: LE_LF
+UseCRLF: false
+DisableFormat: false
+TabWidth: 2
+IndentWidth: 2
+ColumnLimit: 90
+AccessModifierOffset: -2
+MaxEmptyLinesToKeep: 2
+BinPackArguments: true # true 函数调用的参数要么都在同一行，false各一行。
+BinPackParameters: OnePerLine # 函数定义参数自动选择同一行还是各一行。
+AlignConsecutiveDeclarations: None # 对齐连续声明的样式。
+AlignConsecutiveAssignments: Consecutive # 对齐连续赋值的样式, None不对齐
+AllowShortBlocksOnASingleLine: Never # Never
+AllowShortFunctionsOnASingleLine: InlineOnly # 只合并类中定义的函数, 可选All
+AllowShortIfStatementsOnASingleLine: WithoutElse # Never\WithoutElse\OnlyFirstIf\AllIfsAndElse
+AllowShortLambdasOnASingleLine: All # None\Inline\All
+AllowShortLoopsOnASingleLine: true
+# 为 None PenaltyReturnTypeOnItsOwnLine 才被考虑在内
+AlwaysBreakAfterReturnType: None # None\All\TopLevel\TopLevelDefinitions\AllDefinitions
+AlignAfterOpenBracket: AlwaysBreak # Align\AlwaysBreak
+
+# { 是否以下一行开始
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterExternBlock: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: false
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyNamespace: true
+  SplitEmptyRecord: true
+
+LambdaBodyIndentation: OuterScope # Signature\OuterScope
+
+PointerAlignment: Right
+ReferenceAlignment: Right
+SortUsingDeclarations: Lexicographic # Never\Lexicographic\LexicographicNumeric
+
+QualifierAlignment: Right
+
+# end
+AlignArrayOfStructures: Left
+AlignConsecutiveBitFields: AcrossEmptyLinesAndComments
+AlignConsecutiveMacros: AcrossComments
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
+  AlignCaseColons: true
+
+AlignEscapedNewlines: Right
+AlignOperands: AlignAfterOperator
+AlignTrailingComments: true
+AllowAllArgumentsOnNextLine: false
+# AllowAllParametersOfDeclarationOnNextLine: true # 会覆盖 BinPackParameters
+
+AllowShortCaseExpressionOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: Yes
+
+AttributeMacros:
+  - __capability
+  - __output
+  - __unused
+BitFieldColonSpacing: Both
+
+BreakAfterAttributes: Never
+BreakBeforeBinaryOperators: None
+BreakBeforeBraces: Custom # 为Custom BraceWrapping 才被考虑在内
+BreakBeforeConceptDeclarations: Always
+BreakBeforeInlineASMColon: OnlyMultiline
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeComma
+BreakConstructorInitializersBeforeComma: false
+BreakFunctionDefinitionParameters: false
+BreakInheritanceList: BeforeComma
+BreakStringLiterals: false
+BreakTemplateDeclarations: Yes
+
+CommentPragmas: '^ IWYU pragma:'
+CompactNamespaces: true
+Cpp11BracedListStyle: false
+DeriveLineEnding: true
+# DerivePointerAlignment: true # 如果为 true PointerAlignment 仅用作后备。
+
+EmptyLineBeforeAccessModifier: Always
+FixNamespaceComments: true
+
+ForEachMacros: ['RANGES_FOR', 'FOREACH']
+IfMacros: ['IF']
+IncludeBlocks: Regroup
+IncludeCategories:
+  # C system headers: <sys/*> and <*.h>
+  - Regex: '^<((sys|net|netinet|arpa|linux)/|[a-z]+\.h)>$'
+    Priority: 1
+  # C++ standard library headers (simple names, no dots/slashes)
+  - Regex: '^(algorithm|array|atomic|barrier|bitset|cassert|ccomplex|cctype|cerrno|cfenv|cfloat|cinttypes|ciso646|climits|clocale|cmath|codecvt|compare|complex|concepts|condition_variable|contracts|coroutine|csetjmp|csignal|cstdarg|cstdbool|cstddef|cstdint|cstdio|cstdlib|cstring|ctgmath|ctime|cuchar|cwchar|cwctype|debugging|deque|exception|execution|expected|filesystem|flat_map|flat_set|format|forward_list|fstream|functional|future|generator|hazard_pointer|hive|initializer_list|inplace_vector|iomanip|ios|iosfwd|iostream|istream|iterator|latch|limits|linalg|list|locale|map|mdspan|memory|memory_resource|mutex|new|numbers|numeric|optional|ostream|print|queue|random|ranges|ratio|rcu|reflection|regex|scoped_allocator|semaphore|set|shared_mutex|simd|source_location|span|spanstream|sstream|stack|stacktrace|stdexcept|stdfloat|stop_token|streambuf|string|string_view|strstream|syncstream|system_error|text_encoding|thread|tuple|typeindex|typeinfo|type_traits|unordered_map|unordered_set|utility|valarray|variant|vector|version)$'
+    Priority: 2
+  # Remaining angle-bracket includes (third-party)
+  - Regex: '^<.*>$'
+    Priority: 3
+  # Project headers
+  - Regex: '^".*"$'
+    Priority: 4
+IncludeIsMainRegex: '([-_](test|unittest))?$'
+SortIncludes: true
+
+IndentAccessModifiers: false
+IndentCaseBlocks: false
+IndentCaseLabels: false
+IndentExternBlock: AfterExternBlock # 向后兼容 BraceWrapping.AfterExternBlock: true 的缩进。
+IndentGotoLabels: false
+IndentPPDirectives: AfterHash
+IndentRequiresClause: false
+IndentWrappedFunctionNames: false
+
+InsertNewlineAtEOF: true
+IntegerLiteralSeparator:
+  Binary: 3
+  BinaryMinDigits: 4
+  Decimal: 0
+  DecimalMinDigits: 0
+  Hex: 2
+  HexMinDigits: 2
+KeepEmptyLines:
+  AtStartOfBlock: false
+  AtEndOfFile: true
+
+JavaScriptQuotes: Leave
+JavaScriptWrapImports: true
+
+ObjCBinPackProtocolList: Auto
+ObjCBlockIndentWidth: 2
+ObjCBreakBeforeNestedBlockParam: true
+ObjCSpaceAfterProperty: false
+ObjCSpaceBeforeProtocolList: false
+
+MacroBlockBegin: "^NS_MAP_BEGIN|\
+NS_TABLE_HEAD$"
+MacroBlockEnd: "^\
+NS_MAP_END|\
+NS_TABLE_.*_END$"
+
+NamespaceIndentation: None
+PackConstructorInitializers: Never
+PenaltyBreakAssignment: 2
+PenaltyBreakBeforeFirstCallParameter: 1
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyBreakTemplateDeclaration: 10
+PenaltyExcessCharacter: 1000000
+PenaltyIndentedWhitespace: 10
+PenaltyReturnTypeOnItsOwnLine: 200
+
+ReflowComments: false
+RemoveEmptyLinesInUnwrappedLines: true
+RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Always
+
+SpaceAfterCStyleCast: true
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: true
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeJsonColon: false
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: true
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: true
+  AfterOverloadedOperator: true
+  AfterPlacementOperator: true
+  AfterRequiresInClause: true
+  AfterRequiresInExpression: true
+  BeforeNonEmptyParentheses: false
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: true
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+...

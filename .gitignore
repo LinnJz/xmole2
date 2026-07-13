@@ -1,0 +1,23 @@
+.vs/
+out/
+CMakeUserPresets.json
+
+# Local CMake user configuration may contain machine-specific SDK paths.
+# The current file is intentionally retained as a local workspace preset.
+
+# Generated and local test artifacts
+Testing/
+*.user
+*.suo
+
+# Office fixtures are tracked only below testdata.
+*.docx
+*.xlsx
+*.pptx
+*.doc
+*.xls
+*.ppt
+
+deprecated/
+references/
+testdata/
