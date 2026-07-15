@@ -35,6 +35,7 @@ namespace
 {
 
 constexpr auto kMaximumTemporaryFileAttempts = std::size_t { 128 };
+using std::literals::string_view_literals::operator""sv;
 
 auto is_cancelled(OperationContext const &context) -> bool
 {
@@ -104,11 +105,11 @@ auto next_temporary_name() -> std::string
   auto const value = clock_value ^ s_counter.fetch_add(1, std::memory_order_relaxed);
 
   auto buffer            = std::array<char, 64> {};
-  constexpr auto kPrefix = std::string_view { "xmole2-" };
+  constexpr auto kPrefix = "xmole2-"sv;
   auto *output           = std::copy(kPrefix.begin(), kPrefix.end(), buffer.data());
   auto const converted = std::to_chars(output, buffer.data() + buffer.size(), value, 16);
   output               = converted.ptr;
-  constexpr auto kSuffix = std::string_view { ".tmp" };
+  constexpr auto kSuffix = ".tmp"sv;
   output                 = std::copy(kSuffix.begin(), kSuffix.end(), output);
   return std::string(buffer.data(), output);
 }
@@ -151,14 +152,52 @@ auto close_native_handle(NativeHandle const handle) noexcept -> void
 
 #endif
 
+auto query_file_size(NativeHandle const handle, std::filesystem::path const &path)
+    -> Result<std::uint64_t>
+{
+#ifdef _WIN32
+  auto native_size = LARGE_INTEGER {};
+  if (!GetFileSizeEx(handle, &native_size))
+  {
+    return std::unexpected { system_error(
+        IoErrorCode::ReadFailed, "failed to query source size", path,
+        native_error_code()) };
+  }
+  if (native_size.QuadPart < 0)
+  {
+    return std::unexpected { make_error(
+        IoErrorCode::ReadFailed, "source reported a negative size") };
+  }
+  return static_cast<std::uint64_t>(native_size.QuadPart);
+#else
+  struct stat native_status {};
+  if (::fstat(handle, &native_status) != 0)
+  {
+    return std::unexpected { system_error(
+        IoErrorCode::ReadFailed, "failed to query source size", path,
+        native_error_code()) };
+  }
+  if (native_status.st_size < 0)
+  {
+    return std::unexpected { make_error(
+        IoErrorCode::ReadFailed, "source reported a negative size") };
+  }
+  return static_cast<std::uint64_t>(native_status.st_size);
+#endif
+}
+
 class FileByteSource final : public ByteSource
 {
 public:
   FileByteSource(
-      NativeHandle const handle, std::filesystem::path path, bool const remove_on_close)
+      NativeHandle const handle,
+      std::filesystem::path path,
+      bool const remove_on_close,
+      std::uint64_t const source_size)
       : m_handle { handle }
       , m_path { std::move(path) }
       , m_remove_on_close { remove_on_close }
+      , m_source_size { source_size }
   {
   }
 
@@ -178,42 +217,12 @@ public:
       return std::unexpected { cancelled_error() };
     }
 
-#ifdef _WIN32
-    auto native_size = LARGE_INTEGER {};
-    if (!GetFileSizeEx(m_handle, &native_size))
-    {
-      return std::unexpected { system_error(
-          IoErrorCode::ReadFailed, "failed to query source size", m_path,
-          native_error_code()) };
-    }
-    if (native_size.QuadPart < 0)
-    {
-      return std::unexpected { make_error(
-          IoErrorCode::ReadFailed, "source reported a negative size") };
-    }
-    auto const result = static_cast<std::uint64_t>(native_size.QuadPart);
-#else
-    struct stat native_status {};
-    if (::fstat(m_handle, &native_status) != 0)
-    {
-      return std::unexpected { system_error(
-          IoErrorCode::ReadFailed, "failed to query source size", m_path,
-          native_error_code()) };
-    }
-    if (native_status.st_size < 0)
-    {
-      return std::unexpected { make_error(
-          IoErrorCode::ReadFailed, "source reported a negative size") };
-    }
-    auto const result = static_cast<std::uint64_t>(native_status.st_size);
-#endif
-
-    auto const validation = validate_source_size(result, context);
+    auto const validation = validate_source_size(m_source_size, context);
     if (!validation)
     {
       return std::unexpected { validation.error() };
     }
-    return result;
+    return m_source_size;
   }
 
   auto read_at(
@@ -235,17 +244,17 @@ public:
       return std::size_t {};
     }
 
-    auto const source_size = size(context);
-    if (!source_size)
+    auto const validation = validate_source_size(m_source_size, context);
+    if (!validation)
     {
-      return std::unexpected { source_size.error() };
+      return std::unexpected { validation.error() };
     }
-    if (offset >= *source_size)
+    if (offset >= m_source_size)
     {
       return std::size_t {};
     }
 
-    auto const available     = *source_size - offset;
+    auto const available     = m_source_size - offset;
     auto const requested     = static_cast<std::uint64_t>(destination.size());
     auto const total_to_read = static_cast<std::size_t>(std::min(available, requested));
     auto total_read          = std::size_t {};
@@ -320,6 +329,7 @@ private:
   NativeHandle m_handle { kInvalidHandle };
   std::filesystem::path m_path;
   bool m_remove_on_close {};
+  std::uint64_t m_source_size {};
 };
 
 class FileByteSink final : public ByteSink
@@ -331,7 +341,11 @@ public:
   {
   }
 
-  ~FileByteSink() override { close_native_handle(m_handle); }
+  ~FileByteSink() override
+  {
+    auto const ignored = close(OperationContext {});
+    static_cast<void>(ignored);
+  }
 
   auto write(std::span<std::byte const> const source, OperationContext const &context)
       -> Status override
@@ -526,6 +540,8 @@ auto open_file_source(
   }
 
 #ifdef _WIN32
+  // Positional overlapped reads avoid a shared mutable file pointer when one
+  // ByteSource is read concurrently. The synchronous port waits for completion.
   auto const handle = CreateFileW(
       path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_DELETE, nullptr,
       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, nullptr);
@@ -539,15 +555,22 @@ auto open_file_source(
         native_error_code()) };
   }
 
-  auto source = std::shared_ptr<ByteSource> {
-    new FileByteSource { handle, path, remove_on_close }
-  };
-  auto const source_size = source->size(context);
+  auto const source_size = query_file_size(handle, path);
   if (!source_size)
   {
+    close_native_handle(handle);
     return std::unexpected { source_size.error() };
   }
-  return source;
+  auto const size_validation = validate_source_size(*source_size, context);
+  if (!size_validation)
+  {
+    close_native_handle(handle);
+    return std::unexpected { size_validation.error() };
+  }
+
+  return std::shared_ptr<ByteSource> {
+    new FileByteSource { handle, path, remove_on_close, *source_size }
+  };
 }
 
 auto create_temporary_file(

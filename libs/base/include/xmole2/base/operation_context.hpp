@@ -55,6 +55,8 @@ struct ResourceBudget
 class XMOLE2_BASE_API CancellationToken
 {
 public:
+  /// A default token is never cancelled. Observing cancellation acquires writes
+  /// published before the corresponding request_cancellation() call.
   CancellationToken() noexcept = default;
   CancellationToken(CancellationToken const &other) noexcept;
   auto operator= (CancellationToken const &other) noexcept -> CancellationToken &;
@@ -146,8 +148,10 @@ struct OperationContext
 {
   ResourceBudget budget;
   CancellationToken cancellation;
+  /// Non-owning optional sinks and resolver; each must outlive the operation.
   ProgressSink *progress {};
   DiagnosticSink *diagnostics {};
+  /// A null resolver means that external access is denied.
   ExternalResourceResolver *external_resources {};
 };
 

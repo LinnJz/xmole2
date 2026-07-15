@@ -21,6 +21,8 @@ namespace
 {
 
 constexpr auto kDetachBufferBytes = std::uint64_t { 1024 * 1024 };
+using std::literals::string_view_literals::operator""sv;
+constexpr auto kDetachProgressPhase = "io.detach"sv;
 
 auto cancelled_error() -> Error
 {
@@ -101,14 +103,17 @@ private:
 struct RandomAccessReader::Impl
 {
   std::shared_ptr<ByteSource> source;
+  std::uint64_t source_size {};
   std::uint64_t position {};
 };
 
 RandomAccessReader::RandomAccessReader() noexcept = default;
 
 RandomAccessReader::RandomAccessReader(
-    std::shared_ptr<ByteSource> source, std::uint64_t const offset)
-    : m_impl { std::make_unique<Impl>(std::move(source), offset) }
+    std::shared_ptr<ByteSource> source,
+    std::uint64_t const source_size,
+    std::uint64_t const offset)
+    : m_impl { std::make_unique<Impl>(std::move(source), source_size, offset) }
 {
 }
 
@@ -137,12 +142,22 @@ auto RandomAccessReader::read(
     return std::unexpected { resource_error("read request exceeds the resource budget") };
   }
 
-  auto result = m_impl->source->read_at(m_impl->position, destination, context);
+  if (m_impl->position >= m_impl->source_size || destination.empty())
+  {
+    return std::size_t {};
+  }
+
+  auto const available = m_impl->source_size - m_impl->position;
+  auto const requested = static_cast<std::uint64_t>(destination.size());
+  auto const read_size = static_cast<std::size_t>(std::min(available, requested));
+  auto const target    = destination.first(read_size);
+
+  auto result = m_impl->source->read_at(m_impl->position, target, context);
   if (!result)
   {
     return result;
   }
-  if (*result > destination.size())
+  if (*result > target.size())
   {
     return std::unexpected { make_error(
         IoErrorCode::ReadFailed, "byte source returned an invalid read length") };
@@ -208,28 +223,29 @@ auto RandomAccessReader::size(OperationContext const &context) const
     return std::unexpected { make_error(
         IoErrorCode::SourceClosed, "reader has no source") };
   }
-  auto result = m_impl->source->size(context);
-  if (!result)
+  if (context.cancellation.is_cancelled())
   {
-    return result;
+    return std::unexpected { cancelled_error() };
   }
-  auto const validation = validate_source_size(*result, context);
+  auto const validation = validate_source_size(m_impl->source_size, context);
   if (!validation)
   {
     return std::unexpected { validation.error() };
   }
-  return result;
+  return m_impl->source_size;
 }
 
 struct SourceLease::Impl
 {
   std::shared_ptr<ByteSource> source;
+  std::uint64_t source_size {};
 };
 
 SourceLease::SourceLease() noexcept = default;
 
-SourceLease::SourceLease(std::shared_ptr<ByteSource> source)
-    : m_impl { std::make_unique<Impl>(std::move(source)) }
+SourceLease::SourceLease(
+    std::shared_ptr<ByteSource> source, std::uint64_t const source_size)
+    : m_impl { std::make_unique<Impl>(std::move(source), source_size) }
 {
 }
 
@@ -304,7 +320,7 @@ auto SourceLease::acquire(
   {
     return std::unexpected { validation.error() };
   }
-  return SourceLease { std::move(source) };
+  return SourceLease { std::move(source), *source_size };
 }
 
 auto SourceLease::valid() const noexcept -> bool
@@ -319,17 +335,16 @@ auto SourceLease::size(OperationContext const &context) const -> Result<std::uin
     return std::unexpected { make_error(
         IoErrorCode::SourceClosed, "source lease is empty") };
   }
-  auto result = m_impl->source->size(context);
-  if (!result)
+  if (context.cancellation.is_cancelled())
   {
-    return result;
+    return std::unexpected { cancelled_error() };
   }
-  auto const validation = validate_source_size(*result, context);
+  auto const validation = validate_source_size(m_impl->source_size, context);
   if (!validation)
   {
     return std::unexpected { validation.error() };
   }
-  return result;
+  return m_impl->source_size;
 }
 
 auto SourceLease::reader(std::uint64_t const offset, OperationContext const &context)
@@ -345,7 +360,7 @@ auto SourceLease::reader(std::uint64_t const offset, OperationContext const &con
     return std::unexpected { make_error(
         IoErrorCode::OffsetOutOfRange, "reader offset is beyond the source") };
   }
-  return RandomAccessReader { m_impl->source, offset };
+  return RandomAccessReader { m_impl->source, *source_size, offset };
 }
 
 auto SourceLease::detach(OperationContext const &context) -> Status
@@ -407,7 +422,7 @@ auto SourceLease::detach(OperationContext const &context) -> Status
     if (context.progress != nullptr)
     {
       context.progress->report(
-          ProgressUpdate { "io.detach", total_detached, *source_size });
+          ProgressUpdate { kDetachProgressPhase, total_detached, *source_size });
     }
   }
 

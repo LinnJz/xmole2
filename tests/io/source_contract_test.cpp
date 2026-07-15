@@ -1,11 +1,13 @@
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <span>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -74,6 +76,77 @@ public:
   {
     return destination.size() + 1;
   }
+};
+
+class CountingSizeSource final : public xmole2::io::ByteSource
+{
+public:
+  auto size(xmole2::OperationContext const &) const
+      -> xmole2::Result<std::uint64_t> override
+  {
+    m_size_call_count.fetch_add(1, std::memory_order_relaxed);
+    return 4;
+  }
+
+  auto read_at(
+      std::uint64_t const offset,
+      std::span<std::byte> destination,
+      xmole2::OperationContext const &) const -> xmole2::Result<std::size_t> override
+  {
+    auto const bytes = make_bytes("size");
+    if (offset >= bytes.size() || destination.empty())
+    {
+      return std::size_t {};
+    }
+    auto const count = std::min<std::size_t>(
+        destination.size(), bytes.size() - static_cast<std::size_t>(offset));
+    std::copy_n(
+        bytes.begin() + static_cast<std::size_t>(offset), count, destination.begin());
+    return count;
+  }
+
+  [[nodiscard]] auto size_call_count() const noexcept -> std::size_t
+  {
+    return m_size_call_count.load(std::memory_order_relaxed);
+  }
+
+private:
+  mutable std::atomic_size_t m_size_call_count {};
+};
+
+class LargeOffsetSource final : public xmole2::io::ByteSource
+{
+public:
+  static constexpr auto kMarkerOffset = (std::uint64_t { 1 } << 32U) + 17;
+  static constexpr auto kSourceSize   = kMarkerOffset + 1;
+
+  explicit LargeOffsetSource(std::shared_ptr<std::atomic_uint64_t> observed_offset)
+      : m_observed_offset { std::move(observed_offset) }
+  {
+  }
+
+  auto size(xmole2::OperationContext const &) const
+      -> xmole2::Result<std::uint64_t> override
+  {
+    return kSourceSize;
+  }
+
+  auto read_at(
+      std::uint64_t const offset,
+      std::span<std::byte> destination,
+      xmole2::OperationContext const &) const -> xmole2::Result<std::size_t> override
+  {
+    m_observed_offset->store(offset, std::memory_order_relaxed);
+    if (offset != kMarkerOffset || destination.empty())
+    {
+      return std::size_t {};
+    }
+    destination[0] = std::byte { 0x5a };
+    return 1;
+  }
+
+private:
+  std::shared_ptr<std::atomic_uint64_t> m_observed_offset;
 };
 
 class MoveOnlyOwnedSource final : public xmole2::io::ByteSource
@@ -198,6 +271,27 @@ auto test_budget_and_cancellation() -> bool
     return false;
   }
 
+  auto single_resource_context                             = xmole2::OperationContext {};
+  single_resource_context.budget.max_single_resource_bytes = 3;
+  auto single_resource =
+      xmole2::io::SourceLease::from_buffer(make_bytes("four"), single_resource_context);
+  if (single_resource ||
+      single_resource.error().code !=
+          static_cast<std::uint32_t>(xmole2::io::IoErrorCode::ResourceLimitExceeded))
+  {
+    return false;
+  }
+
+  auto memory_context                    = xmole2::OperationContext {};
+  memory_context.budget.max_memory_bytes = 3;
+  auto memory = xmole2::io::SourceLease::from_buffer(make_bytes("four"), memory_context);
+  if (memory ||
+      memory.error().code !=
+          static_cast<std::uint32_t>(xmole2::io::IoErrorCode::ResourceLimitExceeded))
+  {
+    return false;
+  }
+
   auto cancellation    = xmole2::CancellationSource {};
   auto context         = xmole2::OperationContext {};
   context.cancellation = cancellation.token();
@@ -207,6 +301,74 @@ auto test_budget_and_cancellation() -> bool
   return !cancelled &&
          cancelled.error().code ==
              static_cast<std::uint32_t>(xmole2::io::IoErrorCode::Cancelled);
+}
+
+auto test_stable_size_is_queried_once() -> bool
+{
+  auto source        = std::make_shared<CountingSizeSource>();
+  auto const context = xmole2::OperationContext {};
+  auto lease         = xmole2::io::SourceLease::acquire(source, context);
+  if (!lease || source->size_call_count() != 1 || !lease->size(context) ||
+      !lease->size(context))
+  {
+    return false;
+  }
+
+  auto reader = lease->reader(0, context);
+  return reader && reader->size(context) && reader->seek(2, context) &&
+         source->size_call_count() == 1;
+}
+
+auto test_independent_readers_are_concurrent() -> bool
+{
+  auto const context = xmole2::OperationContext {};
+  auto lease = xmole2::io::SourceLease::from_buffer(make_bytes("parallel"), context);
+  if (!lease)
+  {
+    return false;
+  }
+
+  constexpr auto kThreadCount = std::size_t { 4 };
+  auto succeeded              = std::array<std::atomic_bool, kThreadCount> {};
+  auto workers                = std::vector<std::jthread> {};
+  workers.reserve(kThreadCount);
+  for (auto index = std::size_t {}; index < kThreadCount; ++index)
+  {
+    workers.emplace_back([&lease, &context, &succeeded, index]
+    {
+      auto reader = lease->reader(0, context);
+      auto bytes  = std::array<std::byte, 8> {};
+      succeeded[index].store(
+          reader && reader->read_exact(bytes, context) && as_string(bytes) == "parallel",
+          std::memory_order_relaxed);
+    });
+  }
+  workers.clear();
+
+  return std::all_of(succeeded.begin(), succeeded.end(), [](auto const &value) {
+    return value.load(std::memory_order_relaxed);
+  });
+}
+
+auto test_64_bit_offset() -> bool
+{
+  auto observed_offset           = std::make_shared<std::atomic_uint64_t>();
+  auto source                    = std::make_shared<LargeOffsetSource>(observed_offset);
+  auto context                   = xmole2::OperationContext {};
+  context.budget.max_input_bytes = LargeOffsetSource::kSourceSize;
+  context.budget.max_single_resource_bytes = LargeOffsetSource::kSourceSize;
+
+  auto lease = xmole2::io::SourceLease::acquire(source, context);
+  if (!lease)
+  {
+    return false;
+  }
+  auto reader = lease->reader(LargeOffsetSource::kMarkerOffset, context);
+  auto marker = std::byte {};
+  return reader && reader->read_exact(std::span<std::byte> { &marker, 1 }, context) &&
+         marker == std::byte { 0x5a } &&
+         observed_offset->load(std::memory_order_relaxed) ==
+             LargeOffsetSource::kMarkerOffset;
 }
 
 auto test_fault_error_chain_is_preserved() -> bool
@@ -346,6 +508,8 @@ auto test_detach_cancellation_preserves_source() -> bool
 auto run_source_contract_tests() -> bool
 {
   return test_memory_source_and_random_reader() && test_budget_and_cancellation() &&
+         test_stable_size_is_queried_once() &&
+         test_independent_readers_are_concurrent() && test_64_bit_offset() &&
          test_fault_error_chain_is_preserved() &&
          test_invalid_source_contract_is_rejected() &&
          test_unique_source_ownership_outlives_lease() &&

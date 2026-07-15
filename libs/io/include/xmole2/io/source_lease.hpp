@@ -52,7 +52,7 @@ public:
 private:
   struct Impl;
 
-  explicit SourceLease(std::shared_ptr<ByteSource> source);
+  explicit SourceLease(std::shared_ptr<ByteSource> source, std::uint64_t source_size);
 
   std::unique_ptr<Impl> m_impl;
 };

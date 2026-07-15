@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdio>
 #include <filesystem>
@@ -5,6 +8,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -12,6 +16,17 @@
 #include "xmole2/io/error.hpp"
 #include "xmole2/io/source_lease.hpp"
 #include "xmole2/io/temporary_file.hpp"
+
+#ifdef _WIN32
+#  ifndef NOMINMAX
+#    define NOMINMAX
+#  endif
+#  include <Windows.h>
+#  include <winioctl.h>
+#else
+#  include <fcntl.h>
+#  include <unistd.h>
+#endif
 
 namespace
 {
@@ -94,6 +109,65 @@ auto read_all(
   return text;
 }
 
+auto create_sparse_file(
+    std::filesystem::path const &path, std::uint64_t const marker_offset) -> bool
+{
+  constexpr auto kMarker = std::byte { 0x5a };
+#ifdef _WIN32
+  auto const handle = CreateFileW(
+      path.c_str(), GENERIC_WRITE, 0, nullptr, CREATE_NEW, FILE_ATTRIBUTE_NORMAL,
+      nullptr);
+  if (handle == INVALID_HANDLE_VALUE)
+  {
+    return false;
+  }
+
+  auto bytes_returned = DWORD {};
+  auto const sparse   = DeviceIoControl(
+      handle, FSCTL_SET_SPARSE, nullptr, 0, nullptr, 0, &bytes_returned, nullptr);
+  auto distance              = LARGE_INTEGER {};
+  distance.QuadPart          = static_cast<LONGLONG>(marker_offset);
+  auto const positioned      = SetFilePointerEx(handle, distance, nullptr, FILE_BEGIN);
+  auto bytes_written         = DWORD {};
+  auto const wrote           = WriteFile(handle, &kMarker, 1, &bytes_written, nullptr);
+  auto const close_succeeded = CloseHandle(handle);
+  return sparse != 0 && positioned != 0 && wrote != 0 && bytes_written == 1 &&
+         close_succeeded != 0;
+#else
+  auto const handle = ::open(path.c_str(), O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+  if (handle < 0)
+  {
+    return false;
+  }
+  auto const written = ::pwrite(handle, &kMarker, 1, static_cast<off_t>(marker_offset));
+  auto const close_result = ::close(handle);
+  return written == 1 && close_result == 0;
+#endif
+}
+
+auto readers_observe_text_concurrently(
+    xmole2::io::SourceLease const &lease,
+    std::string_view const expected,
+    xmole2::OperationContext const &context) -> bool
+{
+  constexpr auto kThreadCount = std::size_t { 4 };
+  auto succeeded              = std::array<std::atomic_bool, kThreadCount> {};
+  auto workers                = std::vector<std::jthread> {};
+  workers.reserve(kThreadCount);
+  for (auto index = std::size_t {}; index < kThreadCount; ++index)
+  {
+    workers.emplace_back([&lease, expected, &context, &succeeded, index]
+    {
+      auto text = read_all(lease, context);
+      succeeded[index].store(text && *text == expected, std::memory_order_relaxed);
+    });
+  }
+  workers.clear();
+  return std::all_of(succeeded.begin(), succeeded.end(), [](auto const &value) {
+    return value.load(std::memory_order_relaxed);
+  });
+}
+
 auto test_file_source_lease_and_detach(std::filesystem::path const &directory) -> bool
 {
   auto const source_path = directory / "source.bin";
@@ -126,7 +200,9 @@ auto test_file_source_lease_and_detach(std::filesystem::path const &directory) -
   }
 
   auto stable_text = read_all(lease, context);
-  if (!stable_text || *stable_text != "original" || !lease.detach(context))
+  if (!stable_text || *stable_text != "original" ||
+      !readers_observe_text_concurrently(lease, "original", context) ||
+      !lease.detach(context))
   {
     return false;
   }
@@ -140,6 +216,36 @@ auto test_file_source_lease_and_detach(std::filesystem::path const &directory) -
 
   auto detached_text = read_all(lease, context);
   return detached_text && *detached_text == "original";
+}
+
+auto test_sparse_file_above_4_gib(std::filesystem::path const &directory) -> bool
+{
+  constexpr auto kMarkerOffset = (std::uint64_t { 1 } << 32U) + 17;
+  constexpr auto kSourceSize   = kMarkerOffset + 1;
+  auto const path              = directory / "large-sparse.bin";
+  if (!create_sparse_file(path, kMarkerOffset))
+  {
+    return false;
+  }
+
+  auto context                             = xmole2::OperationContext {};
+  context.budget.max_input_bytes           = kSourceSize;
+  context.budget.max_single_resource_bytes = kSourceSize;
+  auto lease = xmole2::io::SourceLease::open_file(path, context);
+  if (!lease)
+  {
+    return false;
+  }
+  auto const source_size = lease->size(context);
+  if (!source_size || *source_size != kSourceSize)
+  {
+    return false;
+  }
+
+  auto reader = lease->reader(kMarkerOffset, context);
+  auto marker = std::byte {};
+  return reader && reader->read_exact(std::span<std::byte> { &marker, 1 }, context) &&
+         marker == std::byte { 0x5a };
 }
 
 auto test_temporary_file(std::filesystem::path const &directory) -> bool
@@ -285,6 +391,36 @@ auto test_atomic_file_writer(std::filesystem::path const &directory) -> bool
   return true;
 }
 
+auto test_atomic_replace_failure_cleanup(std::filesystem::path const &directory) -> bool
+{
+  auto const target  = directory / "atomic-directory-conflict";
+  auto const context = xmole2::OperationContext {};
+  auto writer        = xmole2::io::AtomicFileWriter::create(target, context);
+  if (!writer || !writer->sink().write(make_bytes("must not commit"), context))
+  {
+    return false;
+  }
+
+  auto const temporary_path = writer->temporary_path();
+  if (!std::filesystem::create_directory(target))
+  {
+    return false;
+  }
+
+  auto commit = writer->commit(context);
+  if (commit ||
+      commit.error().code !=
+          static_cast<std::uint32_t>(xmole2::io::IoErrorCode::AtomicReplaceFailed) ||
+      !std::filesystem::is_directory(target))
+  {
+    return false;
+  }
+
+  *writer = xmole2::io::AtomicFileWriter {};
+  return !std::filesystem::exists(temporary_path) &&
+         std::filesystem::is_directory(target);
+}
+
 } // namespace
 
 auto run_storage_contract_tests() -> bool
@@ -300,9 +436,19 @@ auto run_storage_contract_tests() -> bool
     std::fputs("temporary file contract failed\n", stderr);
     return false;
   }
+  if (!test_sparse_file_above_4_gib(directory.path()))
+  {
+    std::fputs("large sparse file contract failed\n", stderr);
+    return false;
+  }
   if (!test_atomic_file_writer(directory.path()))
   {
     std::fputs("atomic writer contract failed\n", stderr);
+    return false;
+  }
+  if (!test_atomic_replace_failure_cleanup(directory.path()))
+  {
+    std::fputs("atomic replace failure cleanup contract failed\n", stderr);
     return false;
   }
   return true;

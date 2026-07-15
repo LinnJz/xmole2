@@ -1,3 +1,4 @@
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -5,10 +6,136 @@
 #include <utility>
 #include <vector>
 
+#include "xmole2/base/external_resource_resolver.hpp"
 #include "xmole2/base/operation_context.hpp"
 
 namespace
 {
+
+class FixedExternalResourceResolver final : public xmole2::ExternalResourceResolver
+{
+public:
+  auto resolve(
+      xmole2::ExternalResourceRequest const &request, xmole2::OperationContext const &)
+      -> xmole2::Result<xmole2::ExternalResource> override
+  {
+    ++m_call_count;
+    if (request.normalized_uri != "https://example.invalid/image.png" ||
+        request.resource_type != "image")
+    {
+      return std::unexpected { xmole2::make_error(
+          xmole2::ErrorDomain::Base, 999, "unexpected external resource request") };
+    }
+    return xmole2::ExternalResource {
+      .bytes = { std::byte { 1 }, std::byte { 2 }, std::byte { 3 }, std::byte { 4 } },
+      .resolved_uri = {},
+      .media_type   = "image/png",
+    };
+  }
+
+  [[nodiscard]] auto call_count() const noexcept -> std::size_t { return m_call_count; }
+
+private:
+  std::size_t m_call_count {};
+};
+
+class FaultExternalResourceResolver final : public xmole2::ExternalResourceResolver
+{
+public:
+  auto resolve(xmole2::ExternalResourceRequest const &, xmole2::OperationContext const &)
+      -> xmole2::Result<xmole2::ExternalResource> override
+  {
+    auto cause        = xmole2::make_error(xmole2::ErrorDomain::Io, 77, "network error");
+    cause.native_code = 1234;
+    auto error  = xmole2::make_error(xmole2::ErrorDomain::Base, 88, "resolve failed");
+    error.cause = std::make_shared<xmole2::Error const>(std::move(cause));
+    return std::unexpected { std::move(error) };
+  }
+};
+
+auto test_cancellation_publication() -> bool
+{
+  constexpr auto kPublishedValue = std::uint64_t { 0x12'34'56'78'9a'bc'de'f0 };
+  auto source                    = xmole2::CancellationSource {};
+  auto const token               = source.token();
+  auto published_value           = std::uint64_t {};
+
+  auto publisher = std::jthread { [&source, &published_value]
+  {
+    published_value = kPublishedValue;
+    source.request_cancellation();
+  } };
+  while (!token.is_cancelled())
+  {
+    std::this_thread::yield();
+  }
+  publisher.join();
+  return published_value == kPublishedValue;
+}
+
+auto test_external_resource_resolver() -> bool
+{
+  auto const request = xmole2::ExternalResourceRequest {
+    .normalized_uri = "https://example.invalid/image.png",
+    .resource_type  = "image",
+    .source_location =
+        xmole2::DocumentLocation {
+                                  .kind      = xmole2::LocationKind::PackagePart,
+                                  .primary   = "/word/document.xml",
+                                  .secondary = std::nullopt,
+                                  },
+  };
+
+  auto context = xmole2::OperationContext {};
+  auto denied  = xmole2::resolve_external_resource(request, context);
+  if (denied ||
+      denied.error().code !=
+          static_cast<std::uint32_t>(xmole2::BaseErrorCode::ExternalAccessDenied) ||
+      !denied.error().location ||
+      denied.error().location->primary != "/word/document.xml")
+  {
+    return false;
+  }
+
+  auto resolver              = FixedExternalResourceResolver {};
+  context.external_resources = &resolver;
+  auto resolved              = xmole2::resolve_external_resource(request, context);
+  if (!resolved || resolved->bytes.size() != 4 ||
+      resolved->resolved_uri != request.normalized_uri ||
+      resolved->media_type != "image/png" || resolver.call_count() != 1)
+  {
+    return false;
+  }
+
+  auto limited_context                    = context;
+  limited_context.budget.max_memory_bytes = 3;
+  auto limited = xmole2::resolve_external_resource(request, limited_context);
+  if (limited ||
+      limited.error().code !=
+          static_cast<std::uint32_t>(xmole2::BaseErrorCode::ResourceLimitExceeded))
+  {
+    return false;
+  }
+
+  auto cancellation              = xmole2::CancellationSource {};
+  auto cancelled_context         = context;
+  cancelled_context.cancellation = cancellation.token();
+  cancellation.request_cancellation();
+  auto cancelled = xmole2::resolve_external_resource(request, cancelled_context);
+  if (cancelled ||
+      cancelled.error().code !=
+          static_cast<std::uint32_t>(xmole2::BaseErrorCode::Cancelled) ||
+      resolver.call_count() != 2)
+  {
+    return false;
+  }
+
+  auto fault_resolver        = FaultExternalResourceResolver {};
+  context.external_resources = &fault_resolver;
+  auto fault                 = xmole2::resolve_external_resource(request, context);
+  return !fault && fault.error().cause != nullptr &&
+         fault.error().cause->native_code == 1234;
+}
 
 auto test_collecting_diagnostic_sink() -> bool
 {
@@ -114,7 +241,8 @@ auto run_operation_context_contract_tests() -> bool
   source.request_cancellation();
 
   auto const context = xmole2::OperationContext {};
-  return test_collecting_diagnostic_sink() && context.budget.max_input_bytes > 0 &&
+  return test_collecting_diagnostic_sink() && test_cancellation_publication() &&
+         test_external_resource_resolver() && context.budget.max_input_bytes > 0 &&
          context.budget.max_xml_attributes > 0 &&
          context.budget.max_cfb_sector_count > 0 &&
          context.budget.max_kdf_iterations > 0 && context.budget.max_image_pixels > 0 &&

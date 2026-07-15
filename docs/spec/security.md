@@ -25,9 +25,9 @@
 
 ## 3. 外部访问
 
-默认禁止网络、外部进程和任意路径读取。外部关系只能经调用者注入的 ExternalResourceResolver 获取。resolver 接收规范化 URI、资源类型、来源位置和剩余预算。
+默认禁止网络、外部进程和任意路径读取。外部关系只能经调用者注入的 `ExternalResourceResolver` 获取。resolver 接收规范化 URI、资源类型、来源位置和同一 `OperationContext`；请求借用字段只在调用期间有效，响应必须 owning。
 
-默认 resolver 返回 ExternalAccessDenied。自定义 resolver 仍必须限制 scheme、根目录/域名、大小、超时、重定向和内容类型。未解析的外部关系保存时保留。
+所有调用必须通过 `resolve_external_resource()`：空 resolver 返回 `BaseErrorCode::ExternalAccessDenied`。入口在调用前后检查取消，并拒绝超过 `max_input_bytes`、`max_single_resource_bytes` 或 `max_memory_bytes` 的响应；上层按共享操作状态累计 `max_external_resource_count`。自定义 resolver 仍必须限制 scheme、根目录/域名、超时、重定向和内容类型，且不得通过内部重试放宽调用者预算。未解析的外部关系保存时保留。具体公共契约见 ADR-0002。
 
 渲染或计算因外部资源不可用而无法完整执行时，必须产生结构化诊断并遵守调用策略；禁止静默等待、隐式重试网络或无说明地使用空内容替代。
 

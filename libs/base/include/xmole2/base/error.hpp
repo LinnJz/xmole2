@@ -30,6 +30,14 @@ enum class ErrorDomain : std::uint8_t
   Rendering,
 };
 
+enum class BaseErrorCode : std::uint32_t
+{
+  Cancelled = 1,
+  InvalidArgument,
+  ResourceLimitExceeded,
+  ExternalAccessDenied,
+};
+
 enum class Severity : std::uint8_t
 {
   Information,

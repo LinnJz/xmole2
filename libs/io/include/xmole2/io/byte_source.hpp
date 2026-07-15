@@ -14,6 +14,7 @@ namespace xmole2::io
 {
 
 /// Supplies a stable byte sequence without exposing a platform file handle.
+/// Const size() and read_at() calls may execute concurrently on one instance.
 class XMOLE2_IO_API ByteSource
 {
 public:
@@ -30,4 +31,3 @@ public:
 };
 
 } // namespace xmole2::io
-

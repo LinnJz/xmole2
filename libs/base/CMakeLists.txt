@@ -1,5 +1,6 @@
 add_library(xmole2_base
   src/error.cpp
+  src/external_resource_resolver.cpp
   src/operation_context.cpp
 )
 

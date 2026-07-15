@@ -27,7 +27,7 @@ OfficeRuntime contract 必须覆盖仅注册 Words、仅注册 Cells、仅注册
 
 格式检测还必须覆盖扩展名与 magic 冲突、分阶段置信度、多个 detector 合并、同分候选歧义、注册顺序无关、加密容器、检测预算/取消以及完整 DetectionReport 证据。扩展名或调用者 hint 不得单独产生高置信度。
 
-base contract 必须覆盖 `CollectingDiagnosticSink` 的完整 Error 信封保留、snapshot/take/clear、并发 report 和 move 后状态。I/O contract 必须分别验证 unique_ptr/shared_ptr source 的所有权转移与 reader 逃逸生命周期，并禁止用无 lifetime guard 的隐式借用替代 owning source。
+base contract 必须覆盖 `CollectingDiagnosticSink` 的完整 Error 信封保留、snapshot/take/clear、并发 report 和 move 后状态；取消请求的跨线程 release/acquire 可见性；外部资源默认拒绝、注入成功、取消、预算拒绝和完整错误信封传播。I/O contract 必须分别验证 unique_ptr/shared_ptr source 的所有权转移与 reader 逃逸生命周期，并禁止用无 lifetime guard 的隐式借用替代 owning source；还必须覆盖稳定长度只查询一次、独立 reader 并发读取、平台稀疏文件的 >4 GiB offset 和输入/单资源/内存预算的独立边界。
 
 该切片通过前，不继续大规模迁移 rdocx 的深层 Words 能力。
 

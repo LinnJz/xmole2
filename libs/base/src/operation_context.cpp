@@ -87,7 +87,7 @@ CancellationToken::~CancellationToken()
 
 auto CancellationToken::is_cancelled() const noexcept -> bool
 {
-  return m_state != nullptr && m_state->cancelled.load(std::memory_order_relaxed);
+  return m_state != nullptr && m_state->cancelled.load(std::memory_order_acquire);
 }
 
 CancellationSource::CancellationSource()
@@ -140,7 +140,7 @@ auto CancellationSource::request_cancellation() noexcept -> void
 {
   if (m_state != nullptr)
   {
-    m_state->cancelled.store(true, std::memory_order_relaxed);
+    m_state->cancelled.store(true, std::memory_order_release);
   }
 }
 

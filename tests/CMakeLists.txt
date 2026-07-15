@@ -16,7 +16,7 @@ add_executable(xmole2_io_contract_tests
   io/storage_contract_test.cpp
 )
 
-target_link_libraries(xmole2_io_contract_tests PRIVATE xmole2::io)
+target_link_libraries(xmole2_io_contract_tests PRIVATE xmole2::io Threads::Threads)
 xmole2_configure_target(xmole2_io_contract_tests PRIVATE)
 
 add_test(NAME xmole2.io.contract COMMAND xmole2_io_contract_tests)

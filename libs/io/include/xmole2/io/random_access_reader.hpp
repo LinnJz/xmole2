@@ -17,6 +17,8 @@ namespace xmole2::io
 class ByteSource;
 class SourceLease;
 
+/// Move-only cursor. One instance is single-thread driven; create independent
+/// readers from the same SourceLease for concurrent access.
 class XMOLE2_IO_API RandomAccessReader
 {
 public:
@@ -40,7 +42,10 @@ public:
 private:
   struct Impl;
 
-  explicit RandomAccessReader(std::shared_ptr<ByteSource> source, std::uint64_t offset);
+  explicit RandomAccessReader(
+      std::shared_ptr<ByteSource> source,
+      std::uint64_t source_size,
+      std::uint64_t offset);
 
   std::unique_ptr<Impl> m_impl;
 
@@ -48,4 +53,3 @@ private:
 };
 
 } // namespace xmole2::io
-

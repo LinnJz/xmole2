@@ -12,37 +12,41 @@ M1 的 `xmole2::cfb` 可以交叉研究本地 `ole-compound-pp`、`office_parser
 
 ## 2. 实施阶段
 
-### M0：工程基线
+状态只描述受版本控制实现与默认 contract 的当前证据，不以空 target 或本地 fixture 代替完成。最后核对：2026-07-16。
 
-- 建立规范 target、public/private header 和导出规则。
-- 实现 base 的 Error/Result、OperationContext、ResourceBudget。
-- 加入依赖方向与 public-header 检查。
+### M0：工程基线（已完成）
 
-### M1：I/O 与容器
+- [x] 建立规范 target、public/private header 和导出规则。
+- [x] 实现 base 的 Error/Result、OperationContext、ResourceBudget、诊断收集、取消和默认拒绝的外部资源解析 port。
+- [x] 加入依赖方向与 public-header 检查；默认 CTest 注册 `xmole2.architecture.public_headers`。
 
-- SourceLease、ByteSource/ByteSink、原子保存和临时存储。
-- ZIP entry 索引/流式读取；CFB 独立 contract。
-- 统一资源预算、取消与故障注入接缝。
+### M1：I/O 与容器（进行中）
 
-### M2：OPC 与 lossless XML
+- [x] SourceLease、ByteSource/ByteSink、原子保存和临时存储，具有 base/io contract。
+- [x] ZIP entry 索引与流式读取，具有 `xmole2.zip.contract`。
+- [ ] CFB 实现与独立 contract；当前 `xmole2::cfb` 仅为依赖占位 target，不计为完成。
+- [x] 已交付的 base/io/zip 路径贯通资源预算、取消与故障注入。
+- [ ] CFB 路径提供同等的资源预算、取消与故障注入证据。
+
+### M2：OPC 与 lossless XML（未开始）
 
 - PartStore、Content Types、Relationships、URI。
 - token/source span、patch writer、dirty tracking。
 - Transitional/Strict profile 与未知扩展保留。
 
-### M3：三格式垂直切片
+### M3：三格式垂直切片（未开始）
 
 - DOCX/XLSX/PPTX codec 与三个最小领域模型并行落地。
 - OfficeRuntime、格式检测、报告、真实 fixture 往返。
 - 通过 `testing.md` 的全部垂直切片标准。
 
-### M4：领域深化
+### M4：领域深化（未开始）
 
 - 在边界验证后继续 Words 迁移。
 - Cells 与 Slides 以相同 contract 扩展。
 - 逐步加入 DOC/XLS/PPT、加密、签名检测。
 
-### M5：可选能力
+### M5：可选能力（未开始）
 
 - cells-calc、三个独立 layout/render、graphics，以及 PDF/HTML/SVG/raster exporters。
 - 独立异步 integration target、动态 C ABI plugin、语言绑定和 1.0 ABI 决策。

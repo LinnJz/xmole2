@@ -45,7 +45,7 @@ renderers → product model + graphics → exporters
 
 | CMake target | 职责 | 允许的直接依赖 |
 |---|---|---|
-| `xmole2::base` | Error、Result、诊断、ID、资源预算、取消、基础值类型 | 标准库 |
+| `xmole2::base` | Error、Result、诊断、ID、资源预算、取消、外部资源解析 port、基础值类型 | 标准库 |
 | `xmole2::io` | ByteSource、ByteSink、随机访问、SourceLease、临时文件、原子替换 | base |
 | `xmole2::xml` | 安全解析、token/source span、patch writer、确定性 writer | base、io |
 | `xmole2::crypto` | AES、RC4、Hash、KDF 等密码学 primitive/port | base、io |

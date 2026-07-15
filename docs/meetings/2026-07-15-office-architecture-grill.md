@@ -165,13 +165,13 @@
 
 决议：旧 API 测试归档到 deprecated，不进入默认 CI；fixture 统一进入 testdata 并登记来源、授权、格式、能力和敏感信息。经确认的协议行为改写成新 contract test；旧实现不是规范 oracle。新架构从第一条切片同步建设 unit、contract、round-trip、fuzz、benchmark。
 
-规范落点：`testing.md`；`migration.md` §1；`testdata/manifest.md`。
+规范落点：`testing.md`；`migration.md` §1；`docs/fixtures/catalog.md`。
 
 ## Q27：参考项目
 
 决议：rdocx、Aspose.Cells FOSS、Aspose.Slides FOSS 是只读参考，不参与默认构建/安装/CI。保留 LICENSE、版本、URL 和时间。新实现不得依赖其内部头文件或命名空间。复用前检查许可证并记录 provenance；测试场景可以重写但输出不是 oracle。
 
-规范落点：`migration.md` §1；`references/README.md`。
+规范落点：`migration.md` §1；`docs/reference-snapshots.md`。
 
 ## Q28：第三方类型是否进入公共 API
 

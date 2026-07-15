@@ -77,6 +77,12 @@ struct OperationContext
 
 核心库提供同步 API，不内置线程池。调用者负责线程调度；取消返回结构化 `Cancelled` 并清理临时输出。
 
+默认构造的 `CancellationToken` 永不进入取消状态。`request_cancellation()` 使用 release 发布取消请求，观察到 `is_cancelled() == true` 的线程以 acquire 同步该请求之前的写入；取消仍是协作式的，操作只保证在规范要求的检查点响应。默认构造的 `OperationContext` 使用安全默认预算，三个 sink/resolver 指针均为空：空 progress/diagnostics 表示不报告，空 external resolver 必须解释为拒绝外部访问。
+
+外部资源契约定义于 `xmole2/base/external_resource_resolver.hpp`。`ExternalResourceRequest` 包含仅在 `resolve()` 调用期间有效的规范化 URI、资源类型和可选来源位置；`ExternalResource` 独立拥有 bytes、最终 URI 与内容类型。空最终 URI 由统一入口规范化为请求 URI，空内容类型表示未知。调用者必须经 `resolve_external_resource()` 统一入口解析：该入口对空 resolver 返回 `BaseErrorCode::ExternalAccessDenied`，贯通取消，并验证返回 bytes 不超过输入、单资源和内存预算。自定义 resolver 的错误信封原样传播。
+
+`progress`、`diagnostics` 和 `external_resources` 均为 non-owning 指针；对应对象必须存活到操作结束。resolver 不得保存 request 中的 `string_view`。核心库不串行化不同操作对同一 resolver 的调用；共享给并发操作的 resolver 必须自行保证线程安全。文档级外部资源数量累计由上层共享操作状态按 `max_external_resource_count` 限制；resolver 自身仍负责调用者配置的 scheme、根目录/域名、超时、重定向和内容类型策略。完整决策见 ADR-0002。
+
 ## 6. 懒加载与 SourceLease
 
 `open(path)` 创建独占 SourceLease，以保证打开时内容的稳定视图。文档允许在生命周期内持有源文件/流。平台实现必须使用适当共享打开模式，避免无必要阻止其他进程读取或重命名源文件，同时保证不会因路径后来被替换而读取不同内容。`detach()` 将仍需数据物化到内存或临时存储并释放原源；`materialize()` 加载语义内容，但不要求所有大型二进制对象驻留内存。
