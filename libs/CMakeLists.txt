@@ -1,7 +1,5 @@
 add_subdirectory(base)
-
-xmole2_add_interface_module(io)
-target_link_libraries(xmole2_io INTERFACE xmole2::base)
+add_subdirectory(io)
 
 xmole2_add_interface_module(xml)
 target_link_libraries(xmole2_xml INTERFACE xmole2::base xmole2::io)
@@ -125,4 +123,3 @@ target_link_libraries(xmole2_office INTERFACE
   xmole2::cells
   xmole2::slides
 )
-

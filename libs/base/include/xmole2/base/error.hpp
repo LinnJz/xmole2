@@ -41,6 +41,7 @@ enum class Severity : std::uint8_t
 enum class LocationKind : std::uint8_t
 {
   Unknown,
+  FilePath,
   PackagePart,
   CompoundStream,
   XmlPath,
@@ -79,4 +80,3 @@ using Status = Result<void>;
     Severity severity = Severity::Error) -> Error;
 
 } // namespace xmole2
-

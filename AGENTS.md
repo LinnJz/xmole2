@@ -15,6 +15,7 @@
 | 构建或第三方库 | [依赖规范](docs/spec/dependencies.md)、[总体架构](docs/spec/architecture.md) |
 | 模块边界或 target | [总体架构](docs/spec/architecture.md) |
 | 公共 API、句柄、错误、事务 | [公共 API](docs/spec/public-api.md) |
+| I/O、SourceLease、临时文件、原子保存 | [I/O 规范](docs/spec/io.md)、[安全规范](docs/spec/security.md) |
 | 保存、转换、未知内容 | [保真规范](docs/spec/fidelity.md) |
 | 不可信输入、资源或外部访问 | [安全规范](docs/spec/security.md) |
 | 测试、fixture、benchmark | [测试规范](docs/spec/testing.md) |
@@ -26,4 +27,3 @@
 2. 规范引用其他文档且影响当前决策时，再读取该文档。
 3. 不以 README、旧实现或参考项目覆盖 spec。
 4. 完整会议事实源仅用于追溯；日常实现优先使用已对齐的 spec 与 ADR。
-

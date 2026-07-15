@@ -4,6 +4,7 @@
 
 - `architecture.md`：分层、target、依赖与产品边界；
 - `public-api.md`：所有权、句柄、错误、事务和生命周期；
+- `io.md`：ByteSource/ByteSink、SourceLease、临时存储与原子保存；
 - `fidelity.md`：往返、保存、转换、dialect 和未知内容；
 - `security.md`：威胁模型、预算、外部访问和主动内容；
 - `dependencies.md`：第三方依赖、版本、职责边界和源码研究流程；
