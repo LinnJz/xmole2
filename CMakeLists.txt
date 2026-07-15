@@ -14,12 +14,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(XMOLE2_BUILD_TESTS "Build xmole2 tests" ON)
+option(XMOLE2_VERIFY_DEPENDENCIES "Resolve and smoke-test all declared dependencies" OFF)
+option(XMOLE2_WARNINGS_AS_ERRORS "Treat xmole2 target warnings as errors" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(Xmole2Module)
-include(Xmole2Dependencies)
+
+if(XMOLE2_VERIFY_DEPENDENCIES)
+  include(Xmole2Dependencies)
+endif()
 
 add_subdirectory(libs)
+xmole2_validate_architecture()
 
 if(XMOLE2_BUILD_TESTS)
   enable_testing()

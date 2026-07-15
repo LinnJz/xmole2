@@ -16,7 +16,15 @@ target_include_directories(xmole2_base PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-xmole2_configure_target(xmole2_base PUBLIC)
+target_compile_features(xmole2_base PUBLIC cxx_std_23)
+xmole2_configure_target(xmole2_base PRIVATE)
+
+if(BUILD_SHARED_LIBS)
+  target_compile_definitions(xmole2_base
+    PRIVATE XMOLE2_BASE_EXPORTS
+    PUBLIC XMOLE2_BUILD_SHARED
+  )
+endif()
 
 install(
   TARGETS xmole2_base

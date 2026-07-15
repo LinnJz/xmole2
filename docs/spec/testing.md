@@ -29,7 +29,7 @@ OfficeRuntime contract 必须覆盖仅注册 Words、仅注册 Cells、仅注册
 
 ## 3. Fixture 管理
 
-所有 fixture 位于 `testdata/`，具有 manifest：来源、许可证、哈希、格式/dialect、预期能力、是否含敏感信息。参考实现输出不得作为规范 oracle。
+所有 fixture payload 位于不提交 Git 的本地 `testdata/`；受版本控制的 catalog 位于 `docs/fixtures/catalog.md`，记录来源、许可证、哈希、格式/dialect、预期能力和敏感信息状态。CI 使用代码生成的 synthetic fixture，或按 catalog 从受控制品源下载并校验哈希；不得依赖开发机上碰巧存在的 `testdata/`。参考实现输出不得作为规范 oracle。
 
 ## 4. CI 门禁
 

@@ -1,17 +1,18 @@
-﻿#include <cassert>
-
 #include "xmole2/base/error.hpp"
 
-auto run_operation_context_contract_tests() -> void;
+auto run_operation_context_contract_tests() -> bool;
 
 auto main() -> int
 {
   auto const error =
       xmole2::make_error(xmole2::ErrorDomain::Opc, 42, "invalid relationship");
-  assert(error.domain == xmole2::ErrorDomain::Opc);
-  assert(error.code == 42);
-  assert(error.message == "invalid relationship");
+  if (error.domain != xmole2::ErrorDomain::Opc || error.code != 42 ||
+      error.severity != xmole2::Severity::Error ||
+      error.message != "invalid relationship")
+  {
+    return 1;
+  }
 
-  run_operation_context_contract_tests();
+  return run_operation_context_contract_tests() ? 0 : 1;
 }
 

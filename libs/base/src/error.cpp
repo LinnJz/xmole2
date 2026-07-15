@@ -10,12 +10,14 @@ auto make_error(
     Severity const severity) -> Error
 {
   return Error {
-    .domain   = domain,
-    .code     = code,
-    .severity = severity,
-    .message  = std::string { message },
+    .domain      = domain,
+    .code        = code,
+    .severity    = severity,
+    .message     = std::string { message },
+    .location    = std::nullopt,
+    .cause       = nullptr,
+    .native_code = std::nullopt,
   };
 }
 
 } // namespace xmole2
-

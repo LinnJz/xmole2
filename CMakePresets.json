@@ -1,4 +1,4 @@
-﻿{
+{
   "version": 9,
   "cmakeMinimumRequired": {
     "major": 3,
@@ -23,8 +23,6 @@
       "name": "msvc-base",
       "hidden": true,
       "inherits": "base",
-      "displayName": "Base Configuration for msvc",
-      "description": "Base preset for msvc",
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "cl.exe"
       },
@@ -37,6 +35,73 @@
         "microsoft.com/VisualStudioSettings/CMake/1.0": {
           "intelliSenseMode": "windows-msvc-x64"
         }
+      }
+    },
+    {
+      "name": "msvc_x64_debug",
+      "inherits": "msvc-base",
+      "displayName": "x64 Debug MSVC (foundation)",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "installDir": "${sourceDir}/out/install/msvc_x64",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "XMOLE2_VERIFY_DEPENDENCIES": "OFF"
+      }
+    },
+    {
+      "name": "msvc_x64_relwithdebinfo",
+      "inherits": "msvc_x64_debug",
+      "displayName": "x64 RelWithDebInfo MSVC (foundation)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "name": "msvc_x64_release",
+      "inherits": "msvc_x64_debug",
+      "displayName": "x64 Release MSVC (foundation)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-msvc_x64_debug",
+      "configurePreset": "msvc_x64_debug"
+    },
+    {
+      "name": "build-msvc_x64_relwithdebinfo",
+      "configurePreset": "msvc_x64_relwithdebinfo"
+    },
+    {
+      "name": "build-msvc_x64_release",
+      "configurePreset": "msvc_x64_release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-msvc_x64_debug",
+      "configurePreset": "msvc_x64_debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "test-msvc_x64_relwithdebinfo",
+      "configurePreset": "msvc_x64_relwithdebinfo",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "test-msvc_x64_release",
+      "configurePreset": "msvc_x64_release",
+      "output": {
+        "outputOnFailure": true
       }
     }
   ]

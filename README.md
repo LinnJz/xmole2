@@ -44,6 +44,8 @@ Development is currently validated with MSVC 19.44 on Windows x64. Linux x64 and
 
 Dependency metadata, pinned versions, upstream repositories, and license identifiers are maintained in [`deps.json`](deps.json). The entries describe dependencies available to xmole2 modules; the early foundational targets do not necessarily link every library yet. All third-party dependencies are private implementation details and must not appear in xmole2 public APIs.
 
+[`vcpkg.json`](vcpkg.json) pins the registry baseline used to reproduce these versions. BqLog remains an optional local integration because it is not currently available from the selected builtin registry baseline.
+
 | Library | Version | Purpose | License |
 |---|---:|---|---|
 | [Abseil](https://abseil.io/) | 20250814.1 | Optimized containers and internal utilities | Apache-2.0 |
@@ -69,8 +71,10 @@ The currently verified Windows build uses the repository's MSVC presets:
 cmake --list-presets all -S .
 cmake --preset msvc_x64_debug
 cmake --build --preset build-msvc_x64_debug
-ctest --test-dir out/build/msvc_x64_debug --output-on-failure
+ctest --preset test-msvc_x64_debug
 ```
+
+This foundation preset intentionally does not resolve every future module dependency. To verify the complete declared dependency set, copy `CMakeUserPresets.json.example` to the ignored `CMakeUserPresets.json`, set `VCPKG_ROOT`, and use the `msvc_vcpkg_x64_debug` configure/build/test presets.
 
 For manual configuration, make sure CMake resolves a compiler and standard library that provide `std::expected`:
 
@@ -91,13 +95,15 @@ cmake --install out/build/default --prefix out/install/default
 - [Dependencies and source-inspection guide](docs/spec/dependencies.md)
 - [C++ code style](docs/spec/code-style.md)
 - [Testing and quality requirements](docs/spec/testing.md)
+- [Local fixture catalog](docs/fixtures/catalog.md)
+- [Local reference snapshots](docs/reference-snapshots.md)
 - [Architecture decision records](docs/adr/)
 
 The complete architecture discussion is preserved in [the design-session record](docs/meetings/2026-07-15-office-architecture-all-sessions.md). Changes to architectural boundaries or public contracts require an ADR and corresponding specification and test updates.
 
 ## Contributing
 
-Contributions are welcome while the project is taking shape. Before changing module boundaries or public contracts, read the specifications above and record the decision in an ADR. C++ changes must follow the repository style guide and be formatted with the checked-in `.clang-format` configuration.
+Contributions are welcome while the project is taking shape. See [CONTRIBUTING.md](CONTRIBUTING.md). Before changing module boundaries or public contracts, read the specifications above and record the decision in an ADR. C++ changes must follow the repository style guide and be formatted with the checked-in `.clang-format` configuration.
 
 ## License
 

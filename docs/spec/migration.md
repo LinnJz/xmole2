@@ -2,11 +2,11 @@
 
 ## 1. 旧实现处置
 
-旧源码和旧 API 测试冻结于 `deprecated/legacy-v0/`，退出默认 CMake 和 CI。它们只可作为算法、第三方库用法和性能经验参考，禁止沿用其模块边界或公开 API。
+旧源码和旧 API 测试在需要查阅的开发机上冻结于 `deprecated/legacy-v0/`，退出默认 CMake 和 CI。整个 `deprecated/` 是不提交 Git 的本地隔离目录，干净 clone 可以不存在。旧内容只可作为算法、第三方库用法和性能经验参考，禁止沿用其模块边界或公开 API。
 
-旧 fixture 移入 `testdata/`。经规范/互操作确认的行为转写成新 contract test；旧实现不是行为 oracle。
+旧 fixture 移入不提交 Git 的本地 `testdata/`。其受版本控制的目录、来源、哈希与隐私状态记录位于 `docs/fixtures/catalog.md`。经规范/互操作确认的行为转写成新 contract test；旧实现不是行为 oracle。
 
-rdocx、Aspose.Cells FOSS、Aspose.Slides FOSS 位于 `references/`，只读且不参与构建。复用算法前必须确认许可证并记录 provenance。
+rdocx、Aspose.Cells FOSS、Aspose.Slides FOSS 可按 `docs/reference-snapshots.md` 恢复到本地 `references/`，只读且不参与构建。整个目录不提交 Git。复用算法前必须确认许可证并记录 provenance。
 
 ## 2. 实施阶段
 

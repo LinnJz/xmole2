@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows-foundation:
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        linkage: [static, shared]
+        include:
+          - linkage: static
+            shared: "OFF"
+          - linkage: shared
+            shared: "ON"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure
+        run: >-
+          cmake -S . -B out/build/ci-windows-${{ matrix.linkage }}
+          -G "Visual Studio 18 2026" -A x64
+          -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+          -DXMOLE2_BUILD_TESTS=ON
+          -DXMOLE2_VERIFY_DEPENDENCIES=OFF
+          -DXMOLE2_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build out/build/ci-windows-${{ matrix.linkage }} --config Debug --parallel
+      - name: Test
+        run: ctest --test-dir out/build/ci-windows-${{ matrix.linkage }} -C Debug --output-on-failure
+      - name: Install
+        run: >-
+          cmake --install out/build/ci-windows-${{ matrix.linkage }} --config Debug
+          --prefix out/install/ci-windows-${{ matrix.linkage }}
+      - name: Verify installed package
+        run: >-
+          cmake -S tests/package-consumer -B out/build/consumer-windows-${{ matrix.linkage }}
+          -G "Visual Studio 18 2026" -A x64
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/out/install/ci-windows-${{ matrix.linkage }}
+      - name: Build installed-package consumer
+        run: >-
+          cmake --build out/build/consumer-windows-${{ matrix.linkage }}
+          --config Debug --parallel
+      - name: Run installed-package consumer
+        shell: pwsh
+        run: |
+          $env:PATH = "${{ github.workspace }}\out\install\ci-windows-${{ matrix.linkage }}\bin;$env:PATH"
+          & "${{ github.workspace }}\out\build\consumer-windows-${{ matrix.linkage }}\Debug\xmole2_package_consumer.exe"
+
+  linux-foundation:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        linkage: [static, shared]
+        include:
+          - linkage: static
+            shared: "OFF"
+          - linkage: shared
+            shared: "ON"
+    steps:
+      - uses: actions/checkout@v5
+      - name: Configure
+        run: >-
+          cmake -S . -B out/build/ci-linux-${{ matrix.linkage }} -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DBUILD_SHARED_LIBS=${{ matrix.shared }}
+          -DXMOLE2_BUILD_TESTS=ON
+          -DXMOLE2_VERIFY_DEPENDENCIES=OFF
+          -DXMOLE2_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build out/build/ci-linux-${{ matrix.linkage }} --parallel
+      - name: Test
+        run: ctest --test-dir out/build/ci-linux-${{ matrix.linkage }} --output-on-failure
+      - name: Install
+        run: >-
+          cmake --install out/build/ci-linux-${{ matrix.linkage }}
+          --prefix out/install/ci-linux-${{ matrix.linkage }}
+      - name: Verify installed package
+        run: >-
+          cmake -S tests/package-consumer -B out/build/consumer-linux-${{ matrix.linkage }} -G Ninja
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_PREFIX_PATH=${{ github.workspace }}/out/install/ci-linux-${{ matrix.linkage }}
+      - name: Build installed-package consumer
+        run: cmake --build out/build/consumer-linux-${{ matrix.linkage }} --parallel
+      - name: Run installed-package consumer
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/out/install/ci-linux-${{ matrix.linkage }}/lib
+        run: ./out/build/consumer-linux-${{ matrix.linkage }}/xmole2_package_consumer

@@ -5,7 +5,7 @@
 
 ## 1. 信息来源与基本原则
 
-[`deps.json`](../../deps.json) 是依赖名称、固定版本、上游仓库、主页和许可证的机器可读清单。本文定义每个依赖在 xmole2 中的职责、允许依赖的模块，以及开发者和大模型查找真实接口与源码的流程。
+[`deps.json`](../../deps.json) 是依赖名称、固定版本、上游仓库、主页和许可证的机器可读清单。[`vcpkg.json`](../../vcpkg.json) 固定可复现安装使用的 builtin registry baseline 和 port 集合。两者必须保持一致：`deps.json` 负责审计元数据，`vcpkg.json` 负责解析。本文定义每个依赖在 xmole2 中的职责、允许依赖的模块，以及开发者和大模型查找真实接口与源码的流程。
 
 必须遵守以下规则：
 
@@ -14,6 +14,7 @@
 - 使用标准库能够清晰、正确且满足性能要求时，优先使用标准库；替换为第三方设施必须有明确收益或统一工程要求。
 - CMake 必须链接包导出的 imported target，禁止在源码或公共构建脚本中硬编码本机 include/lib 文件路径。
 - 版本、许可证或上游仓库变更必须先更新 `deps.json`，再更新本文、构建集成和测试。
+- vcpkg port 版本变更必须同时更新 `vcpkg.json` 的 baseline，并验证 baseline 解析结果与 `deps.json` 完全一致。
 - 不得根据记忆猜测接口、宏、target 名称或所有权契约；必须检查当前固定版本的实际头文件、CMake config、官方文档或源码。
 
 ## 2. 依赖清单与职责边界
@@ -34,6 +35,10 @@
 | simdutf | 8.0.0 | SIMD 加速 UTF 校验、检测与转码，为 XML 前端提供快速编码路径 | io、xml | `simdutf::simdutf` | 已安装 |
 
 “已安装”只描述当前开发机的 `x64-windows-static-md` 状态，不替代 `deps.json`，也不构成其他开发环境必须具有相同绝对路径的要求。
+
+当前 builtin baseline 为 `734f8130ffe2f02cf855a3a42a2958f01b3fb005`，其版本与表中除 BqLog 外的 port 对齐。BqLog 未进入该 manifest，因为当前 builtin registry 不提供它；它只能在 provenance 明确的本地安装存在时作为可选 backend 被发现。
+
+标准 manifest/version 流程要求 `VCPKG_ROOT` 是能够 checkout baseline 的正常 Git clone。若本机使用不含 `.git` 的归档式 vcpkg，只能在被忽略的 `CMakeUserPresets.json` 中设置 `VCPKG_MANIFEST_MODE=OFF`，使用已经安装且逐项核对版本的 classic tree；该模式只用于本机兼容，不构成发布或 CI 的可复现依赖证据。
 
 ## 3. 当前开发机的查找位置
 
@@ -149,9 +154,8 @@ installed root=E:/Development/vcpkg/installed/x64-windows-static-md
 
 1. 明确现有标准库或已声明依赖为何不能满足需求。
 2. 记录预期模块、性能/正确性收益、许可证与供应链风险。
-3. 更新 `deps.json` 和本文。
+3. 更新 `deps.json`、`vcpkg.json` baseline 和本文。
 4. 使用 imported target 完成 PRIVATE 构建集成。
 5. 增加最小 contract、错误路径和必要 benchmark。
 6. 检查安装导出的 public headers 与 CMake targets，确认没有第三方泄漏。
 7. 对新增的长期架构依赖提交 ADR。
-

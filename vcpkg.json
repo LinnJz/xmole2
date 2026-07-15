@@ -1,0 +1,19 @@
+{
+  "name": "xmole2",
+  "version-string": "0.1.0",
+  "description": "Development dependencies for the xmole2 Office document library",
+  "builtin-baseline": "734f8130ffe2f02cf855a3a42a2958f01b3fb005",
+  "dependencies": [
+    "abseil",
+    "boost-uuid",
+    "fmt",
+    "frozen",
+    "gtest",
+    "magic-enum",
+    "minizip-ng",
+    "openssl",
+    "pugixml",
+    "re2",
+    "simdutf"
+  ]
+}

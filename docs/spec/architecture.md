@@ -151,7 +151,11 @@ references/                            # 不参与构建
 deprecated/                            # 不参与构建
 ```
 
+`references/`、`deprecated/`、`testdata/` 是本地隔离目录，整体不提交 Git，并且在干净 clone 中可以不存在。其内容不得成为配置、构建、测试发现或安装的隐式前置条件。需要长期保留的来源、许可、fixture 哈希和处置状态记录在受版本控制的 `docs/reference-snapshots.md` 与 `docs/fixtures/catalog.md`；实际 payload 由开发者按记录在本地恢复。
+
 第三方依赖必须为 `PRIVATE`，公共 API 只出现 xmole2 与经评估的标准库类型。具体版本、职责、查找和引入规则由 `dependencies.md` 规定。实现应优先选择标准库提供的跨平台能力；标准库不足时，优先选择当前 vcpkg `x64-windows-static-md` 可提供的包。1.0 前以 vcpkg manifest/version baseline 管理依赖；1.0 后同时提供固定版本的 FetchContent 或 submodule 获取路径，不能强制使用者采用 vcpkg。
+
+安装 target 只向 consumer 传播真实的使用要求，例如 C++23、公共 include 和必要的公开链接依赖。仓库自身的警告、安全检查、诊断格式和编译器专用选项必须为 `PRIVATE`，禁止把 `/W4`、`/sdl`、`-Wconversion` 等开发选项泄漏给 consumer。
 
 absl 容器、pugixml 节点、minizip-ng 对象、fmt formatter、frozen 容器以及其他第三方类型不得出现在 public header、公开成员或函数签名中。`fmt` 仅用于内部消息构造；XML、ZIP、crypto 和容器实现通过 xmole2 自有 port/adapter 隔离。
 

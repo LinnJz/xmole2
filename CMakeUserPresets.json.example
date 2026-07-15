@@ -1,0 +1,43 @@
+{
+  "version": 9,
+  "configurePresets": [
+    {
+      "name": "msvc-vcpkg-base",
+      "hidden": true,
+      "inherits": "msvc-base",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "installDir": "${sourceDir}/out/install/msvc_vcpkg_x64",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+        "XMOLE2_VERIFY_DEPENDENCIES": "ON"
+      }
+    },
+    {
+      "name": "msvc_vcpkg_x64_debug",
+      "inherits": "msvc-vcpkg-base",
+      "displayName": "x64 Debug MSVC with vcpkg",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-msvc_vcpkg_x64_debug",
+      "configurePreset": "msvc_vcpkg_x64_debug"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-msvc_vcpkg_x64_debug",
+      "configurePreset": "msvc_vcpkg_x64_debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

@@ -44,6 +44,8 @@ xmole2 是一个使用 C++23 开发的开源 Microsoft Office 文档处理库，
 
 依赖元数据、固定版本、上游仓库和许可证标识统一维护在 [`deps.json`](deps.json) 中。清单描述 xmole2 各模块可以使用的依赖；早期基础 target 不一定已经链接其中所有库。所有第三方依赖均属于私有实现细节，不得出现在 xmole2 公共 API 中。
 
+[`vcpkg.json`](vcpkg.json) 固定用于复现这些版本的 registry baseline。BqLog 当前不在所选 builtin registry baseline 中，因此只作为可选的本地集成。
+
 | 依赖库 | 版本 | 用途 | 许可证 |
 |---|---:|---|---|
 | [Abseil](https://abseil.io/) | 20250814.1 | 优化容器与内部工具 | Apache-2.0 |
@@ -69,8 +71,10 @@ xmole2 是一个使用 C++23 开发的开源 Microsoft Office 文档处理库，
 cmake --list-presets all -S .
 cmake --preset msvc_x64_debug
 cmake --build --preset build-msvc_x64_debug
-ctest --test-dir out/build/msvc_x64_debug --output-on-failure
+ctest --preset test-msvc_x64_debug
 ```
+
+该 foundation preset 有意不解析尚未实现模块的全部依赖。需要验证完整依赖集合时，将 `CMakeUserPresets.json.example` 复制为已被 Git 忽略的 `CMakeUserPresets.json`，设置 `VCPKG_ROOT`，再使用 `msvc_vcpkg_x64_debug` 的配置、构建和测试 preset。
 
 手动配置时，必须确保 CMake 选择的编译器及其标准库提供 `std::expected`：
 
@@ -91,13 +95,15 @@ cmake --install out/build/default --prefix out/install/default
 - [依赖库与源码查阅规范](docs/spec/dependencies.md)
 - [C++ 代码规范](docs/spec/code-style.md)
 - [测试与质量要求](docs/spec/testing.md)
+- [本地 fixture 清单](docs/fixtures/catalog.md)
+- [本地参考快照](docs/reference-snapshots.md)
 - [架构决策记录](docs/adr/)
 
 完整架构讨论保存在[设计会议记录](docs/meetings/2026-07-15-office-architecture-all-sessions.md)中。修改架构边界或公共契约必须先提交 ADR，并同步更新规范和测试。
 
 ## 参与贡献
 
-欢迎在项目成型阶段参与贡献。修改模块边界或公共契约前，请先阅读上述规范并通过 ADR 记录决策。C++ 修改必须遵循仓库代码风格，并使用仓库中的 `.clang-format` 配置完成格式化。
+欢迎在项目成型阶段参与贡献，具体流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。修改模块边界或公共契约前，请先阅读上述规范并通过 ADR 记录决策。C++ 修改必须遵循仓库代码风格，并使用仓库中的 `.clang-format` 配置完成格式化。
 
 ## 许可证
 

@@ -12,6 +12,8 @@
 - `migration.md`：旧实现归档和分阶段实施；
 - `development-process.md`：需求到发布的工程流程。
 
+本地且不提交 Git 的参考源码与 fixture，其可追踪元数据分别位于 `../reference-snapshots.md` 和 `../fixtures/catalog.md`。
+
 完整会议事实源是 `../meetings/2026-07-15-office-architecture-all-sessions.md`，必须保持只读。`../meetings/2026-07-15-office-architecture-grill.md` 只是便于导航的决议摘要，不能覆盖、删减或扩展事实源。每项规范性架构决策必须能够追溯到完整会话或 ADR。
 
 规范冲突时，先停止实现并提交 ADR 解决；不得由代码现状反向覆盖规范。
