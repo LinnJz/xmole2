@@ -19,6 +19,15 @@ xmole2_configure_target(xmole2_io_contract_tests PRIVATE)
 
 add_test(NAME xmole2.io.contract COMMAND xmole2_io_contract_tests)
 
+add_executable(xmole2_zip_contract_tests
+  zip/zip_contract_test.cpp
+)
+
+target_link_libraries(xmole2_zip_contract_tests PRIVATE xmole2::zip)
+xmole2_configure_target(xmole2_zip_contract_tests PRIVATE)
+
+add_test(NAME xmole2.zip.contract COMMAND xmole2_zip_contract_tests)
+
 if(WIN32 AND BUILD_SHARED_LIBS)
   set_tests_properties(xmole2.base.contract PROPERTIES
     ENVIRONMENT_MODIFICATION
@@ -27,6 +36,10 @@ if(WIN32 AND BUILD_SHARED_LIBS)
   set_tests_properties(xmole2.io.contract PROPERTIES
     ENVIRONMENT_MODIFICATION
       "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
+  )
+  set_tests_properties(xmole2.zip.contract PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_zip>;$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
   )
 endif()
 

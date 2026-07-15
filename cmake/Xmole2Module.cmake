@@ -65,14 +65,23 @@ function(xmole2_assert_direct_dependencies target)
     set(actual_dependencies)
   endif()
 
+  set(project_dependencies)
+  foreach(dependency IN LISTS actual_dependencies)
+    if(dependency MATCHES "^xmole2::")
+      list(APPEND project_dependencies "${dependency}")
+    elseif(dependency MATCHES "^\\$<LINK_ONLY:(xmole2::[^>]+)>$")
+      list(APPEND project_dependencies "${CMAKE_MATCH_1}")
+    endif()
+  endforeach()
+
   set(expected_dependencies ${ARGN})
-  list(SORT actual_dependencies)
+  list(SORT project_dependencies)
   list(SORT expected_dependencies)
 
-  if(NOT "${actual_dependencies}" STREQUAL "${expected_dependencies}")
+  if(NOT "${project_dependencies}" STREQUAL "${expected_dependencies}")
     message(FATAL_ERROR
       "Architecture dependency violation for ${target}: "
-      "expected [${expected_dependencies}], actual [${actual_dependencies}]"
+      "expected [${expected_dependencies}], actual [${project_dependencies}]"
     )
   endif()
 endfunction()

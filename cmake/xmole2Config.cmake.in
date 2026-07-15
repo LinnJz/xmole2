@@ -1,6 +1,36 @@
 @PACKAGE_INIT@
 
+set(_xmole2_minizip_components
+  zip
+  opc
+  words-docx
+  words
+  cells-xlsx
+  cells
+  slides-pptx
+  slides
+  office
+)
+
+foreach(_xmole2_component IN LISTS xmole2_FIND_COMPONENTS)
+  if(_xmole2_component IN_LIST _xmole2_minizip_components)
+    include(CMakeFindDependencyMacro)
+    find_dependency(minizip-ng CONFIG)
+    break()
+  endif()
+endforeach()
+
 include("${CMAKE_CURRENT_LIST_DIR}/xmole2Targets.cmake")
+
+foreach(_xmole2_component IN LISTS xmole2_FIND_COMPONENTS)
+  if(TARGET "xmole2::${_xmole2_component}")
+    set("xmole2_${_xmole2_component}_FOUND" TRUE)
+  else()
+    set("xmole2_${_xmole2_component}_FOUND" FALSE)
+  endif()
+endforeach()
 
 check_required_components(xmole2)
 
+unset(_xmole2_component)
+unset(_xmole2_minizip_components)

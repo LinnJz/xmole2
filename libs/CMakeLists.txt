@@ -7,8 +7,7 @@ target_link_libraries(xmole2_xml INTERFACE xmole2::base xmole2::io)
 xmole2_add_interface_module(crypto)
 target_link_libraries(xmole2_crypto INTERFACE xmole2::base xmole2::io)
 
-xmole2_add_interface_module(zip)
-target_link_libraries(xmole2_zip INTERFACE xmole2::base xmole2::io)
+add_subdirectory(zip)
 
 xmole2_add_interface_module(cfb)
 target_link_libraries(xmole2_cfb INTERFACE xmole2::base xmole2::io)

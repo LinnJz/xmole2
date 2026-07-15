@@ -6,7 +6,9 @@
 
 旧 fixture 移入不提交 Git 的本地 `testdata/`。其受版本控制的目录、来源、哈希与隐私状态记录位于 `docs/fixtures/catalog.md`。经规范/互操作确认的行为转写成新 contract test；旧实现不是行为 oracle。
 
-rdocx、Aspose.Cells FOSS、Aspose.Slides FOSS 可按 `docs/reference-snapshots.md` 恢复到本地 `references/`，只读且不参与构建。整个目录不提交 Git。复用算法前必须确认许可证并记录 provenance。
+rdocx、Aspose.Cells FOSS、Aspose.Slides FOSS 以及 OLE2/CFB 研究项目可按 `docs/reference-snapshots.md` 恢复到本地 `references/`，只读且不参与构建。整个目录不提交 Git。复用算法前必须确认精确上游、commit、文件级许可证并记录 provenance；来源或许可证未知、或许可证与 xmole2 不兼容时禁止复制或改写实现。
+
+M1 的 `xmole2::cfb` 可以交叉研究本地 `ole-compound-pp`、`office_parser`、DocWire 和 Microsoft CompoundFileReader 快照，重点比较 CFB header、DIFAT/FAT、MiniFAT、directory、stream chain 与 OLE property set 的处理。实现仍必须从 MS-CFB/MS-OLEPS 和 xmole2 contract 独立推导，不沿用参考项目的模块边界、公共 API、整文件物化、裸指针、异常或平台 OLE handle 模型。
 
 ## 2. 实施阶段
 
