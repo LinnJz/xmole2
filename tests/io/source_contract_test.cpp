@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -73,6 +74,46 @@ public:
   {
     return destination.size() + 1;
   }
+};
+
+class MoveOnlyOwnedSource final : public xmole2::io::ByteSource
+{
+public:
+  explicit MoveOnlyOwnedSource(std::shared_ptr<bool> destroyed)
+      : m_destroyed { std::move(destroyed) }
+  {
+  }
+
+  MoveOnlyOwnedSource(MoveOnlyOwnedSource const &)                      = delete;
+  auto operator= (MoveOnlyOwnedSource const &) -> MoveOnlyOwnedSource & = delete;
+
+  ~MoveOnlyOwnedSource() override { *m_destroyed = true; }
+
+  auto size(xmole2::OperationContext const &) const
+      -> xmole2::Result<std::uint64_t> override
+  {
+    return 3;
+  }
+
+  auto read_at(
+      std::uint64_t const offset,
+      std::span<std::byte> destination,
+      xmole2::OperationContext const &) const -> xmole2::Result<std::size_t> override
+  {
+    auto const bytes = make_bytes("own");
+    if (offset >= bytes.size() || destination.empty())
+    {
+      return std::size_t {};
+    }
+    auto const count = std::min<std::size_t>(
+        destination.size(), bytes.size() - static_cast<std::size_t>(offset));
+    std::copy_n(
+        bytes.begin() + static_cast<std::size_t>(offset), count, destination.begin());
+    return count;
+  }
+
+private:
+  std::shared_ptr<bool> m_destroyed;
 };
 
 class CancellingProgressSink final : public xmole2::ProgressSink
@@ -212,6 +253,63 @@ auto test_invalid_source_contract_is_rejected() -> bool
                         static_cast<std::uint32_t>(xmole2::io::IoErrorCode::ReadFailed);
 }
 
+auto test_unique_source_ownership_outlives_lease() -> bool
+{
+  auto destroyed = std::make_shared<bool>(false);
+  auto source    = std::unique_ptr<xmole2::io::ByteSource> {
+    std::make_unique<MoveOnlyOwnedSource>(destroyed)
+  };
+  auto const context = xmole2::OperationContext {};
+  auto lease         = xmole2::io::SourceLease::acquire(std::move(source), context);
+  if (!lease || source != nullptr || *destroyed)
+  {
+    return false;
+  }
+
+  auto reader = lease->reader(0, context);
+  if (!reader)
+  {
+    return false;
+  }
+  *lease = xmole2::io::SourceLease {};
+
+  auto bytes = std::array<std::byte, 3> {};
+  if (*destroyed || !reader->read_exact(bytes, context) || as_string(bytes) != "own")
+  {
+    return false;
+  }
+  *reader = xmole2::io::RandomAccessReader {};
+  return *destroyed;
+}
+
+auto test_shared_source_ownership_outlives_lease() -> bool
+{
+  auto destroyed     = std::make_shared<bool>(false);
+  auto source        = std::make_shared<MoveOnlyOwnedSource>(destroyed);
+  auto weak          = std::weak_ptr<MoveOnlyOwnedSource> { source };
+  auto const context = xmole2::OperationContext {};
+  auto lease         = xmole2::io::SourceLease::acquire(source, context);
+  source.reset();
+  if (!lease || weak.expired() || *destroyed)
+  {
+    return false;
+  }
+
+  auto reader = lease->reader(0, context);
+  if (!reader)
+  {
+    return false;
+  }
+  *lease = xmole2::io::SourceLease {};
+  if (weak.expired() || *destroyed)
+  {
+    return false;
+  }
+
+  *reader = xmole2::io::RandomAccessReader {};
+  return weak.expired() && *destroyed;
+}
+
 auto test_detach_cancellation_preserves_source() -> bool
 {
   auto buffer                = std::vector<std::byte>((1024 * 1024) + 1, std::byte { 7 });
@@ -250,5 +348,7 @@ auto run_source_contract_tests() -> bool
   return test_memory_source_and_random_reader() && test_budget_and_cancellation() &&
          test_fault_error_chain_is_preserved() &&
          test_invalid_source_contract_is_rejected() &&
+         test_unique_source_ownership_outlives_lease() &&
+         test_shared_source_ownership_outlives_lease() &&
          test_detach_cancellation_preserves_source();
 }

@@ -274,6 +274,13 @@ auto SourceLease::from_buffer(
 }
 
 auto SourceLease::acquire(
+    std::unique_ptr<ByteSource> source, OperationContext const &context)
+    -> Result<SourceLease>
+{
+  return acquire(std::shared_ptr<ByteSource> { std::move(source) }, context);
+}
+
+auto SourceLease::acquire(
     std::shared_ptr<ByteSource> source, OperationContext const &context)
     -> Result<SourceLease>
 {

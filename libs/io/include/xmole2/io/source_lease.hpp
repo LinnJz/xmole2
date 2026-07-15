@@ -35,6 +35,9 @@ public:
       std::vector<std::byte> buffer, OperationContext const &context)
       -> Result<SourceLease>;
   [[nodiscard]] static auto acquire(
+      std::unique_ptr<ByteSource> source, OperationContext const &context)
+      -> Result<SourceLease>;
+  [[nodiscard]] static auto acquire(
       std::shared_ptr<ByteSource> source, OperationContext const &context)
       -> Result<SourceLease>;
 
@@ -55,4 +58,3 @@ private:
 };
 
 } // namespace xmole2::io
-

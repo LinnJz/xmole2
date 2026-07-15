@@ -17,10 +17,12 @@
 | 公共 API、句柄、错误、事务 | [公共 API](docs/spec/public-api.md) |
 | I/O、SourceLease、临时文件、原子保存 | [I/O 规范](docs/spec/io.md)、[安全规范](docs/spec/security.md) |
 | ZIP 索引、entry 流与压缩路径 | [ZIP 规范](docs/spec/zip.md)、[I/O 规范](docs/spec/io.md)、[安全规范](docs/spec/security.md) |
+| OfficeRuntime、格式检测、codec registry | [Office Runtime 规范](docs/spec/office-runtime.md)、[公共 API](docs/spec/public-api.md)、[安全规范](docs/spec/security.md) |
 | 保存、转换、未知内容 | [保真规范](docs/spec/fidelity.md) |
 | 不可信输入、资源或外部访问 | [安全规范](docs/spec/security.md) |
 | 测试、fixture、benchmark | [测试规范](docs/spec/testing.md) |
 | 旧代码或参考项目 | [迁移规范](docs/spec/migration.md)、[依赖规范](docs/spec/dependencies.md) |
+| 模块代码审查 | [审查规范](docs/spec/review.md)、[总体架构](docs/spec/architecture.md)、对应模块 spec |
 
 ## 渐进式披露
 

@@ -6,7 +6,7 @@
 
 `OfficeDocument` 的具体 C++ 表示尚未决议；它可以是 discriminated holder，但不能同时以含义不同的“variant/facade”作为契约。实现 office-runtime 前必须用 ADR 在 `std::variant`、类型擦除 facade 或其他方案中作出选择。
 
-格式检测必须区分 `UnsupportedFormat`、`CodecUnavailable`、`EncryptedCredentialRequired` 与 `CorruptInput`。
+格式检测必须区分 `UnsupportedFormat`、`AmbiguousFormat`、`CodecUnavailable`、`EncryptedCredentialRequired` 与 `CorruptInput`。检测由 `office-runtime.md` 定义的多 detector 证据管线完成；公开 `DetectionReport` 必须保留候选、置信度和冲突证据，而不是只返回扩展名或布尔值。
 
 ## 2. 所有权与 PImpl
 
@@ -54,6 +54,10 @@ domain 至少区分 I/O、ZIP、CFB、OPC、XML、Crypto、Words、Cells、Slide
 
 可恢复问题进入 DiagnosticBag/DiagnosticSink；导致操作失败的问题进入 Error。普通文件错误不使用异常。内存耗尽等进程级异常策略另行 ADR 决定。
 
+`CollectingDiagnosticSink` 是 base 提供的标准后验收集实现。它复制收到的完整 `Error` 信封，保留 location、cause 与 native_code，并提供 snapshot、take、clear、size 和 empty 操作；不得返回内部 vector 引用。snapshot 返回稳定副本，take 原子移出当前批次并清空 collector。
+
+collector 可以安全接收并发 report；snapshot/take/clear 与 report 互斥。移动或销毁 collector 时调用者必须保证没有并发 report。生产诊断的操作仍负责执行 `max_diagnostic_count`，collector 不得静默截断或自行改变操作结果。
+
 DocumentLocation 必须能够定位 Part、CFB stream、XML path、Word NodeId、sheet/cell、slide/shape。
 
 ## 5. OperationContext
@@ -77,7 +81,9 @@ struct OperationContext
 
 `open(path)` 创建独占 SourceLease，以保证打开时内容的稳定视图。文档允许在生命周期内持有源文件/流。平台实现必须使用适当共享打开模式，避免无必要阻止其他进程读取或重命名源文件，同时保证不会因路径后来被替换而读取不同内容。`detach()` 将仍需数据物化到内存或临时存储并释放原源；`materialize()` 加载语义内容，但不要求所有大型二进制对象驻留内存。
 
-`from_buffer()` 默认取得 owning buffer。借用重载必须以类型编码生命周期。保存到原路径使用临时文件和原子替换，不能直接覆盖仍被 SourceLease 读取的源。文档销毁时必须统一释放 SourceLease、解析缓存和所属临时文件。
+`from_buffer()` 默认取得 owning buffer。`SourceLease::acquire(unique_ptr<ByteSource>)` 转移 source 独占所有权，`acquire(shared_ptr<ByteSource>)` 共享已有所有权；两者都允许 reader 在原 lease move 或销毁后继续持有 source。
+
+禁止把普通左值通过空 deleter 包装成 shared_ptr 来模拟所有权。借用重载必须以类型编码生命周期并携带可共享 lifetime guard；没有 guard 的栈对象引用不得进入可能逃逸调用栈的 document/archive/reader。保存到原路径使用临时文件和原子替换，不能直接覆盖仍被 SourceLease 读取的源。文档销毁时必须统一释放 SourceLease、解析缓存和所属临时文件。
 
 ## 7. 修改与事务
 

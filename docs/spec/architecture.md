@@ -129,6 +129,8 @@ auto runtime = OfficeRuntime::builder()
 
 初期 codec 是普通链接库。未来动态插件通过版本化 C ABI 注册到同一 runtime；1.0 前不承诺 C++ ABI 稳定。
 
+格式检测同样使用显式 detector registry。detector 产生带有序置信度和证据的候选，runtime 以确定性规则合并；扩展名只能作为弱提示，同分冲突必须显式返回歧义。完整检测契约见 `office-runtime.md`。
+
 用户只链接所需产品组件；registry 缺少匹配 codec 时返回 `CodecUnavailable`。测试必须能够显式注入 mock codec、故障 Source 和受限能力 codec。聚合 `xmole2::office` 提供包含当前构建全部内置 codec 的便捷 runtime，但 `xmole2::office-runtime` 本身不得隐式拉入三个产品。
 
 `OfficeDocument` 的具体 C++ 表示尚未在本次会议确定。`std::variant`、类型擦除 facade 或其他 discriminated holder 的选择必须在实现 office-runtime 前由 ADR 决定；在此之前禁止把任一方案写成既定公共 API。

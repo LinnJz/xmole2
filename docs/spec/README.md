@@ -5,13 +5,16 @@
 - `architecture.md`：分层、target、依赖与产品边界；
 - `public-api.md`：所有权、句柄、错误、事务和生命周期；
 - `io.md`：ByteSource/ByteSink、SourceLease、临时存储与原子保存；
+- `zip.md`：ZIP entry 索引、流式读取、预算与完整性验证；
+- `office-runtime.md`：codec/detector registry、格式检测置信度与证据裁决；
 - `fidelity.md`：往返、保存、转换、dialect 和未知内容；
 - `security.md`：威胁模型、预算、外部访问和主动内容；
 - `dependencies.md`：第三方依赖、版本、职责边界和源码研究流程；
 - `code-style.md`：C++ 命名、初始化、include、字符串、容器、注释与格式化；
 - `testing.md`：测试层次、fixture、CI 与性能门禁；
 - `migration.md`：旧实现归档和分阶段实施；
-- `development-process.md`：需求到发布的工程流程。
+- `development-process.md`：需求到发布的工程流程；
+- `review.md`：结构化代码审查层次、报告模板与审查者守则。
 
 本地且不提交 Git 的参考源码与 fixture，其可追踪元数据分别位于 `../reference-snapshots.md` 和 `../fixtures/catalog.md`。
 

@@ -1,9 +1,11 @@
+find_package(Threads REQUIRED)
+
 add_executable(xmole2_base_contract_tests
   base/error_contract_test.cpp
   base/operation_context_contract_test.cpp
 )
 
-target_link_libraries(xmole2_base_contract_tests PRIVATE xmole2::base)
+target_link_libraries(xmole2_base_contract_tests PRIVATE xmole2::base Threads::Threads)
 xmole2_configure_target(xmole2_base_contract_tests PRIVATE)
 
 add_test(NAME xmole2.base.contract COMMAND xmole2_base_contract_tests)

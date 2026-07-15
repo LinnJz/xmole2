@@ -5,8 +5,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "xmole2/base/error.hpp"
 #include "xmole2/base/export.hpp"
@@ -106,6 +108,36 @@ class DiagnosticSink
 public:
   virtual ~DiagnosticSink()                            = default;
   virtual auto report(Error const &diagnostic) -> void = 0;
+};
+
+/// Stores diagnostics for post-operation inspection without losing Error metadata.
+class XMOLE2_BASE_API CollectingDiagnosticSink final : public DiagnosticSink
+{
+public:
+  CollectingDiagnosticSink();
+  CollectingDiagnosticSink(CollectingDiagnosticSink const &) = delete;
+  auto operator= (CollectingDiagnosticSink const &)
+      -> CollectingDiagnosticSink & = delete;
+  CollectingDiagnosticSink(CollectingDiagnosticSink &&other);
+  auto operator= (CollectingDiagnosticSink &&other) -> CollectingDiagnosticSink &;
+  ~CollectingDiagnosticSink() override;
+
+  auto report(Error const &diagnostic) -> void override;
+
+  /// Returns a stable copy of the diagnostics collected so far.
+  [[nodiscard]] auto snapshot() const -> std::vector<Error>;
+
+  /// Atomically removes and returns the diagnostics collected so far.
+  [[nodiscard]] auto take() -> std::vector<Error>;
+
+  auto clear() -> void;
+  [[nodiscard]] auto size() const -> std::size_t;
+  [[nodiscard]] auto empty() const -> bool;
+
+private:
+  struct Impl;
+
+  std::unique_ptr<Impl> m_impl;
 };
 
 class ExternalResourceResolver;

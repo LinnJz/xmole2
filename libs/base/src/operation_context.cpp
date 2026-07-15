@@ -1,7 +1,9 @@
 #include "xmole2/base/operation_context.hpp"
 
 #include <atomic>
+#include <mutex>
 #include <utility>
+#include <vector>
 
 namespace xmole2
 {
@@ -11,6 +13,12 @@ class CancellationState
 public:
   std::atomic_size_t reference_count { 1 };
   std::atomic_bool cancelled { false };
+};
+
+struct CollectingDiagnosticSink::Impl
+{
+  mutable std::mutex mutex;
+  std::vector<Error> diagnostics;
 };
 
 namespace
@@ -134,6 +142,68 @@ auto CancellationSource::request_cancellation() noexcept -> void
   {
     m_state->cancelled.store(true, std::memory_order_relaxed);
   }
+}
+
+CollectingDiagnosticSink::CollectingDiagnosticSink()
+    : m_impl { std::make_unique<Impl>() }
+{
+}
+
+CollectingDiagnosticSink::CollectingDiagnosticSink(CollectingDiagnosticSink &&other)
+    : m_impl { std::make_unique<Impl>() }
+{
+  m_impl.swap(other.m_impl);
+}
+
+auto CollectingDiagnosticSink::operator= (CollectingDiagnosticSink &&other)
+    -> CollectingDiagnosticSink &
+{
+  if (this != &other)
+  {
+    auto replacement = std::make_unique<Impl>();
+    m_impl           = std::move(other.m_impl);
+    other.m_impl     = std::move(replacement);
+  }
+  return *this;
+}
+
+CollectingDiagnosticSink::~CollectingDiagnosticSink() = default;
+
+auto CollectingDiagnosticSink::report(Error const &diagnostic) -> void
+{
+  auto const lock = std::lock_guard { m_impl->mutex };
+  m_impl->diagnostics.push_back(diagnostic);
+}
+
+auto CollectingDiagnosticSink::snapshot() const -> std::vector<Error>
+{
+  auto const lock = std::lock_guard { m_impl->mutex };
+  return m_impl->diagnostics;
+}
+
+auto CollectingDiagnosticSink::take() -> std::vector<Error>
+{
+  auto const lock  = std::lock_guard { m_impl->mutex };
+  auto diagnostics = std::move(m_impl->diagnostics);
+  m_impl->diagnostics.clear();
+  return diagnostics;
+}
+
+auto CollectingDiagnosticSink::clear() -> void
+{
+  auto const lock = std::lock_guard { m_impl->mutex };
+  m_impl->diagnostics.clear();
+}
+
+auto CollectingDiagnosticSink::size() const -> std::size_t
+{
+  auto const lock = std::lock_guard { m_impl->mutex };
+  return m_impl->diagnostics.size();
+}
+
+auto CollectingDiagnosticSink::empty() const -> bool
+{
+  return size() == 0;
 }
 
 } // namespace xmole2

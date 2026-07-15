@@ -32,3 +32,13 @@
 5. 借鉴具体算法前，在变更记录中标明参考文件、上游 commit、许可证、改写范围和验证证据；来源或许可证未知时不得借鉴实现。
 
 恢复任何快照后必须保留上游 LICENSE、NOTICE 和文件级版权声明。参考项目自带 fixture 仍属于未提交的本地 payload；若要形成 xmole2 contract，必须按 `docs/fixtures/catalog.md` 单独登记来源、许可证、哈希和预期行为。
+
+## 跨层模式研究结论
+
+对 rdocx、DocWire、Microsoft CompoundFileReader 和 Aspose.Cells FOSS 的 base/I/O 路径进行比较后，不采纳任何参考项目的整体错误、I/O、取消或预算架构。xmole2 继续以 Result/Error chain、ByteSource/SourceLease、CancellationToken、ResourceBudget 和原子输出为基线。
+
+只吸收以下三个局部设计目标，具体契约以对应 spec 为准：
+
+1. DocWire 的多阶段格式检测启发了 `office-runtime.md` 的 detector 证据管线与有序置信度；这是概念级 clean-room 设计，不复制其 AGPL 实现、MIME registry 或源码结构。
+2. Aspose.Cells FOSS 的后验 LoadDiagnostics 启发 base 提供 `CollectingDiagnosticSink`；xmole2 保留现有推送式 `DiagnosticSink`，collector 只是可选标准实现，不把诊断藏入 Workbook 私有状态。
+3. DocWire 的 `ref_or_owned<T>` 启发公开入口区分 owned/shared/borrowed，但不采纳“左值 + 空 deleter”做法。`SourceLease` 接受 unique_ptr/shared_ptr；未来 borrowed source 必须显式携带 lifetime guard。

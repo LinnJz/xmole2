@@ -25,6 +25,10 @@ DOCX、XLSX、PPTX 必须同时完成：
 
 OfficeRuntime contract 必须覆盖仅注册 Words、仅注册 Cells、仅注册 Slides、无匹配 codec、mock codec、故障 Source、受限能力 codec 和“包含当前构建全部内置 codec”的便捷 runtime。
 
+格式检测还必须覆盖扩展名与 magic 冲突、分阶段置信度、多个 detector 合并、同分候选歧义、注册顺序无关、加密容器、检测预算/取消以及完整 DetectionReport 证据。扩展名或调用者 hint 不得单独产生高置信度。
+
+base contract 必须覆盖 `CollectingDiagnosticSink` 的完整 Error 信封保留、snapshot/take/clear、并发 report 和 move 后状态。I/O contract 必须分别验证 unique_ptr/shared_ptr source 的所有权转移与 reader 逃逸生命周期，并禁止用无 lifetime guard 的隐式借用替代 owning source。
+
 该切片通过前，不继续大规模迁移 rdocx 的深层 Words 能力。
 
 ## 3. Fixture 管理
