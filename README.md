@@ -65,16 +65,21 @@ The `#N` suffix used by some versions is the vcpkg port-version suffix. When add
 
 ## Build
 
-The currently verified Windows build uses the repository's MSVC presets:
+Copy `CMakeUserPresets.json.example` to the ignored `CMakeUserPresets.json`, edit it with your local paths, then list and use the available presets:
 
 ```console
 cmake --list-presets all -S .
-cmake --preset msvc_x64_debug
-cmake --build --preset build-msvc_x64_debug
-ctest --preset test-msvc_x64_debug
 ```
 
-This foundation preset intentionally does not resolve every future module dependency. To verify the complete declared dependency set, copy `CMakeUserPresets.json.example` to the ignored `CMakeUserPresets.json`, set `VCPKG_ROOT`, and use the `msvc_vcpkg_x64_debug` configure/build/test presets.
+Pick any listed configure preset and run:
+
+```console
+cmake --preset <preset_name>
+cmake --build --preset build-<preset_name>
+ctest --test-dir "out/build/<preset_name>" --output-on-failure
+```
+
+> **Note:** CMakeUserPresets.json may contain `//` or `/* */` comments (JSON5) for guidance. If your toolchain or editor rejects them, remove all comments before use.
 
 For manual configuration, make sure CMake resolves a compiler and standard library that provide `std::expected`:
 

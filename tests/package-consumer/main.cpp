@@ -1,7 +1,9 @@
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <vector>
 
+#include "xmole2/cfb/cfb_stream_reader.hpp"
 #include "xmole2/io/source_lease.hpp"
 #include "xmole2/zip/zip_archive.hpp"
 
@@ -38,13 +40,17 @@ auto empty_zip() -> std::vector<std::byte>
 
 auto main() -> int
 {
-  auto const context = xmole2::OperationContext {};
-  auto source        = xmole2::io::SourceLease::from_buffer(empty_zip(), context);
+  static_assert(!std::is_copy_constructible_v<xmole2::cfb::CfbStreamReader>);
+  static_assert(std::is_move_constructible_v<xmole2::cfb::CfbStreamReader>);
+
+  auto const cfb_reader = xmole2::cfb::CfbStreamReader {};
+  auto const context    = xmole2::OperationContext {};
+  auto source           = xmole2::io::SourceLease::from_buffer(empty_zip(), context);
   if (!source)
   {
     return 1;
   }
 
   auto archive = xmole2::zip::ZipArchive::open(std::move(*source), context);
-  return archive && archive->entry_count() == 0 ? 0 : 1;
+  return archive && archive->entry_count() == 0 && !cfb_reader.finished() ? 0 : 1;
 }

@@ -8,11 +8,11 @@
 
 rdocx、Aspose.Cells FOSS、Aspose.Slides FOSS 以及 OLE2/CFB 研究项目可按 `docs/reference-snapshots.md` 恢复到本地 `references/`，只读且不参与构建。整个目录不提交 Git。复用算法前必须确认精确上游、commit、文件级许可证并记录 provenance；来源或许可证未知、或许可证与 xmole2 不兼容时禁止复制或改写实现。
 
-M1 的 `xmole2::cfb` 可以交叉研究本地 `ole-compound-pp`、`office_parser`、DocWire 和 Microsoft CompoundFileReader 快照，重点比较 CFB header、DIFAT/FAT、MiniFAT、directory、stream chain 与 OLE property set 的处理。实现仍必须从 MS-CFB/MS-OLEPS 和 xmole2 contract 独立推导，不沿用参考项目的模块边界、公共 API、整文件物化、裸指针、异常或平台 OLE handle 模型。
+M1 的 `xmole2::cfb` 必须以 `docs/office-standard/ms-cfb.pdf` 所存 `[MS-CFB]` v20240423 为格式基线，日常检索使用 `docs/office-standard/ms-cfb/ms-cfb_md_full.md`，表格与图形复核使用对应逐页 OCR JSON，具体规则见 `office-standard.md`。实现可以交叉研究本地 `ole-compound-pp`、`office_parser`、DocWire 和 Microsoft CompoundFileReader 快照，重点比较 CFB header、DIFAT/FAT、MiniFAT、directory、stream chain 与 OLE property set 的处理，但不得沿用参考项目的模块边界、公共 API、整文件物化、裸指针、异常或平台 OLE handle 模型。
 
 ## 2. 实施阶段
 
-状态只描述受版本控制实现与默认 contract 的当前证据，不以空 target 或本地 fixture 代替完成。最后核对：2026-07-16。
+状态只描述受版本控制实现与默认 contract 的当前证据，不以空 target 或本地 fixture 代替完成。最后核对：2026-07-17。
 
 ### M0：工程基线（已完成）
 
@@ -20,13 +20,17 @@ M1 的 `xmole2::cfb` 可以交叉研究本地 `ole-compound-pp`、`office_parser
 - [x] 实现 base 的 Error/Result、OperationContext、ResourceBudget、诊断收集、取消和默认拒绝的外部资源解析 port。
 - [x] 加入依赖方向与 public-header 检查；默认 CTest 注册 `xmole2.architecture.public_headers`。
 
-### M1：I/O 与容器（进行中）
+### M1：I/O 与容器（已完成）
 
 - [x] SourceLease、ByteSource/ByteSink、原子保存和临时存储，具有 base/io contract。
 - [x] ZIP entry 索引与流式读取，具有 `xmole2.zip.contract`。
-- [ ] CFB 实现与独立 contract；当前 `xmole2::cfb` 仅为依赖占位 target，不计为完成。
+- [x] `xmole2::cfb` 已建立独立实现 target 与首个读取切片：受预算、可取消地读取并校验 CFB v3/v4 header，具有 `xmole2.cfb.contract`。
+- [x] CFB DIFAT/FAT sector table 已实现有界读取、角色校验、循环与越界检测，并具有 `xmole2.cfb.sector_table.contract`。
+- [x] CFB directory sector chain 与 128-byte entry index 已实现 UTF-16、字段兼容、引用图、循环、color 约束、Unicode 17.0.0 simple-uppercase sibling 排序/唯一性、预算与故障防御，并具有 `xmole2.cfb.directory.contract`。
+- [x] CFB MiniFAT table 与 root mini-stream sector mapping 已实现声明长度、角色冲突、循环、越界、预算与故障防御，并具有 `xmole2.cfb.mini_stream.contract`。
+- [x] CFB 惰性 regular/mini stream chain reader 已实现按声明长度的分块读取、源生命周期保持、chain 共享/边界验证与 payload 故障传播，具有 `xmole2.cfb.stream_reader.contract`。
 - [x] 已交付的 base/io/zip 路径贯通资源预算、取消与故障注入。
-- [ ] CFB 路径提供同等的资源预算、取消与故障注入证据。
+- [x] CFB 路径已提供贯通 header、FAT/DIFAT、directory、MiniFAT/root mapping 与 regular/mini payload reader 的资源预算、取消和故障注入证据。
 
 ### M2：OPC 与 lossless XML（未开始）
 

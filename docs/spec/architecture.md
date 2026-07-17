@@ -146,14 +146,15 @@ auto runtime = OfficeRuntime::builder()
 ```text
 libs/<module>/include/xmole2/<module>/  # public headers
 libs/<module>/src/                     # private implementation
-tests/{unit,contract,roundtrip,...}/
+tests/{base,cfb,dependencies,io,package-consumer,zip}/
 testdata/
 docs/{spec,adr}/
+docs/office-standard/                 # 官方标准及同版本 Markdown/OCR 派生产物
 references/                            # 不参与构建
 deprecated/                            # 不参与构建
 ```
 
-`references/`、`deprecated/`、`testdata/` 是本地隔离目录，整体不提交 Git，并且在干净 clone 中可以不存在。其内容不得成为配置、构建、测试发现或安装的隐式前置条件。需要长期保留的来源、许可、fixture 哈希和处置状态记录在受版本控制的 `docs/reference-snapshots.md` 与 `docs/fixtures/catalog.md`；实际 payload 由开发者按记录在本地恢复。
+`docs/office-standard/` 保存官方标准 PDF 与 Markdown/OCR 检索资料；其使用规则见 `office-standard.md`。该目录包含大文件，整体不提交 Git，由开发者按 `office-standard.md` 中的 SHA-256 和版本信息在本地恢复。`references/`、`deprecated/`、`testdata/` 也是本地隔离目录，整体不提交 Git，并且在干净 clone 中可以不存在。这些目录的内容不得成为配置、构建、测试发现或安装的隐式前置条件。需要长期保留的参考来源、许可、fixture 哈希和处置状态记录在受版本控制的 `docs/reference-snapshots.md` 与 `docs/fixtures/catalog.md`；实际 payload 由开发者按记录在本地恢复。
 
 第三方依赖必须为 `PRIVATE`，公共 API 只出现 xmole2 与经评估的标准库类型。具体版本、职责、查找和引入规则由 `dependencies.md` 规定。实现应优先选择标准库提供的跨平台能力；标准库不足时，优先选择当前 vcpkg `x64-windows-static-md` 可提供的包。1.0 前以 vcpkg manifest/version baseline 管理依赖；1.0 后同时提供固定版本的 FetchContent 或 submodule 获取路径，不能强制使用者采用 vcpkg。
 
@@ -166,6 +167,8 @@ absl 容器、pugixml 节点、minizip-ng 对象、fmt formatter、frozen 容器
 发布组件至少包括 `xmole-words`、`xmole-cells`、`xmole-slides` 和聚合的 `xmole-office`。
 
 三个产品必须分别拥有独立 contract test、benchmark 和可审计的依赖闭包。模块间依赖通过安装 target 或清晰的 CMake target 表达，禁止依赖仓库相对源码路径；该约束用于保留将来按团队、版本或授权模式拆仓的能力。
+
+CMake 构建使用预设驱动（`CMakePresets.json` + `CMakeUserPresets.json`）。`CMakePresets.json` 维护共享的隐藏 base 预设，包括 `base`（Ninja、C++23、compile_commands）以及针对各编译器的编译器 base：`msvc-base`、`gcc-base`、`clang-base`、`clang-cl-base`。`CMakeUserPresets.json`（不提交 Git）包含本地开发者的编译器路径、架构、包管理器设置和构建类型。`CMakeUserPresets.json.example` 提供 JSON5 注释格式的完整参考，用户按需复制并编辑。预设系统不强制使用 vcpkg；允许 Conan、FetchContent 或系统包管理器。
 
 ## 9. 平台
 

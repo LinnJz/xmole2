@@ -65,16 +65,21 @@ xmole2 是一个使用 C++23 开发的开源 Microsoft Office 文档处理库，
 
 ## 构建
 
-当前已验证的 Windows 构建使用仓库中的 MSVC presets：
+将 `CMakeUserPresets.json.example` 复制为已被 Git 忽略的 `CMakeUserPresets.json`，按本机环境修改路径，然后列出可用 preset：
 
 ```console
 cmake --list-presets all -S .
-cmake --preset msvc_x64_debug
-cmake --build --preset build-msvc_x64_debug
-ctest --preset test-msvc_x64_debug
 ```
 
-该 foundation preset 有意不解析尚未实现模块的全部依赖。需要验证完整依赖集合时，将 `CMakeUserPresets.json.example` 复制为已被 Git 忽略的 `CMakeUserPresets.json`，设置 `VCPKG_ROOT`，再使用 `msvc_vcpkg_x64_debug` 的配置、构建和测试 preset。
+选择任一 configure preset 后运行：
+
+```console
+cmake --preset <preset_name>
+cmake --build --preset build-<preset_name>
+ctest --test-dir "out/build/<preset_name>" --output-on-failure
+```
+
+> **注意：** CMakeUserPresets.json 中可使用 `//` 或 `/* */` 注释（JSON5 风格）作为指引。若工具链或编辑器不支持注释，请在使用前全部删除。
 
 手动配置时，必须确保 CMake 选择的编译器及其标准库提供 `std::expected`：
 

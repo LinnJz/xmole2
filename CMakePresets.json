@@ -1,4 +1,4 @@
-{
+﻿{
   "version": 9,
   "cmakeMinimumRequired": {
     "major": 3,
@@ -24,7 +24,8 @@
       "hidden": true,
       "inherits": "base",
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "cl.exe"
+        "CMAKE_CXX_COMPILER": "cl.exe",
+        "MSVC_RUNTIME_MODE": "MD"
       },
       "condition": {
         "type": "equals",
@@ -38,70 +39,54 @@
       }
     },
     {
-      "name": "msvc_x64_debug",
-      "inherits": "msvc-base",
-      "displayName": "x64 Debug MSVC (foundation)",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
+      "name": "gcc-base",
+      "hidden": true,
+      "inherits": "base",
+      "displayName": "GCC Base",
+      "description": "GCC compiler (MinGW on Windows, system GCC on Linux)",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++"
       },
-      "installDir": "${sourceDir}/out/install/msvc_x64",
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "linux-gcc-x64"
+        }
+      }
+    },
+    {
+      "name": "clang-base",
+      "hidden": true,
+      "inherits": "base",
+      "displayName": "Clang Base",
+      "description": "LLVM Clang compiler (cross-platform)",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "XMOLE2_VERIFY_DEPENDENCIES": "OFF"
+        "CMAKE_CXX_COMPILER": "clang++"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-clang-x64"
+        }
       }
     },
     {
-      "name": "msvc_x64_relwithdebinfo",
-      "inherits": "msvc_x64_debug",
-      "displayName": "x64 RelWithDebInfo MSVC (foundation)",
+      "name": "clang-cl-base",
+      "hidden": true,
+      "inherits": "base",
+      "displayName": "Clang-Cl Base",
+      "description": "MSVC-compatible Clang (Windows only)",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
-      }
-    },
-    {
-      "name": "msvc_x64_release",
-      "inherits": "msvc_x64_debug",
-      "displayName": "x64 Release MSVC (foundation)",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "build-msvc_x64_debug",
-      "configurePreset": "msvc_x64_debug"
-    },
-    {
-      "name": "build-msvc_x64_relwithdebinfo",
-      "configurePreset": "msvc_x64_relwithdebinfo"
-    },
-    {
-      "name": "build-msvc_x64_release",
-      "configurePreset": "msvc_x64_release"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "test-msvc_x64_debug",
-      "configurePreset": "msvc_x64_debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "test-msvc_x64_relwithdebinfo",
-      "configurePreset": "msvc_x64_relwithdebinfo",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "test-msvc_x64_release",
-      "configurePreset": "msvc_x64_release",
-      "output": {
-        "outputOnFailure": true
+        "CMAKE_CXX_COMPILER": "clang-cl.exe",
+        "MSVC_RUNTIME_MODE": "MD"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "intelliSenseMode": "windows-clang-x64"
+        }
       }
     }
   ]

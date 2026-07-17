@@ -30,6 +30,63 @@ xmole2_configure_target(xmole2_zip_contract_tests PRIVATE)
 
 add_test(NAME xmole2.zip.contract COMMAND xmole2_zip_contract_tests)
 
+add_executable(xmole2_cfb_contract_tests
+  cfb/cfb_contract_test.cpp
+)
+
+target_link_libraries(xmole2_cfb_contract_tests PRIVATE xmole2::cfb)
+xmole2_configure_target(xmole2_cfb_contract_tests PRIVATE)
+
+add_test(NAME xmole2.cfb.contract COMMAND xmole2_cfb_contract_tests)
+
+add_executable(xmole2_cfb_sector_table_contract_tests
+  cfb/cfb_sector_table_contract_test.cpp
+)
+
+target_link_libraries(xmole2_cfb_sector_table_contract_tests PRIVATE xmole2::cfb)
+xmole2_configure_target(xmole2_cfb_sector_table_contract_tests PRIVATE)
+
+add_test(
+  NAME xmole2.cfb.sector_table.contract
+  COMMAND xmole2_cfb_sector_table_contract_tests
+)
+
+add_executable(xmole2_cfb_directory_contract_tests
+  cfb/cfb_directory_contract_test.cpp
+)
+
+target_link_libraries(xmole2_cfb_directory_contract_tests PRIVATE xmole2::cfb)
+xmole2_configure_target(xmole2_cfb_directory_contract_tests PRIVATE)
+
+add_test(
+  NAME xmole2.cfb.directory.contract
+  COMMAND xmole2_cfb_directory_contract_tests
+)
+
+add_executable(xmole2_cfb_mini_stream_contract_tests
+  cfb/cfb_mini_stream_contract_test.cpp
+)
+
+target_link_libraries(xmole2_cfb_mini_stream_contract_tests PRIVATE xmole2::cfb)
+xmole2_configure_target(xmole2_cfb_mini_stream_contract_tests PRIVATE)
+
+add_test(
+  NAME xmole2.cfb.mini_stream.contract
+  COMMAND xmole2_cfb_mini_stream_contract_tests
+)
+
+add_executable(xmole2_cfb_stream_reader_contract_tests
+  cfb/cfb_stream_reader_contract_test.cpp
+)
+
+target_link_libraries(xmole2_cfb_stream_reader_contract_tests PRIVATE xmole2::cfb)
+xmole2_configure_target(xmole2_cfb_stream_reader_contract_tests PRIVATE)
+
+add_test(
+  NAME xmole2.cfb.stream_reader.contract
+  COMMAND xmole2_cfb_stream_reader_contract_tests
+)
+
 if(WIN32 AND BUILD_SHARED_LIBS)
   set_tests_properties(xmole2.base.contract PROPERTIES
     ENVIRONMENT_MODIFICATION
@@ -42,6 +99,26 @@ if(WIN32 AND BUILD_SHARED_LIBS)
   set_tests_properties(xmole2.zip.contract PROPERTIES
     ENVIRONMENT_MODIFICATION
       "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_zip>;$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
+  )
+  set_tests_properties(xmole2.cfb.contract PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_cfb>;$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
+  )
+  set_tests_properties(xmole2.cfb.sector_table.contract PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_cfb>;$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
+  )
+  set_tests_properties(xmole2.cfb.directory.contract PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_cfb>;$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
+  )
+  set_tests_properties(xmole2.cfb.mini_stream.contract PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_cfb>;$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
+  )
+  set_tests_properties(xmole2.cfb.stream_reader.contract PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:xmole2_cfb>;$<TARGET_FILE_DIR:xmole2_io>;$<TARGET_FILE_DIR:xmole2_base>"
   )
 endif()
 

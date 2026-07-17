@@ -9,13 +9,15 @@
 5. 运行 foundation Debug/Release 测试；涉及依赖时再运行 vcpkg dependency smoke；
 6. 更新 spec、能力状态和 `CHANGELOG.md`。
 
-Foundation 验证：
+Preset 验证——参考 `CMakeUserPresets.json.example` 配置本地 `CMakeUserPresets.json`，然后：
 
 ```powershell
-cmake --preset msvc_x64_debug
-cmake --build --preset build-msvc_x64_debug
-ctest --preset test-msvc_x64_debug
+# 先列出可用 preset，选择对应名称后替换 <name>
+cmake --list-presets all -S .
+cmake --preset <name>
+cmake --build --preset build-<name>
+ctest --test-dir out/build/<name> --output-on-failure
 ```
 
-完整依赖验证需先按 README 配置本地 `CMakeUserPresets.json`。`testdata/`、`references/`、`deprecated/` 是不提交 Git 的本地隔离目录，变更不得依赖它们在其他开发机存在。
+`testdata/`、`references/`、`deprecated/` 是不提交 Git 的本地隔离目录，变更不得依赖它们在其他开发机存在。
 

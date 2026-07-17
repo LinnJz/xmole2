@@ -21,12 +21,14 @@
 | 保存、转换、未知内容 | [保真规范](docs/spec/fidelity.md) |
 | 不可信输入、资源或外部访问 | [安全规范](docs/spec/security.md) |
 | 测试、fixture、benchmark | [测试规范](docs/spec/testing.md) |
+| Office 格式、容器或协议实现与评审 | [Office 官方标准资料规范](docs/spec/office-standard.md)、`docs/office-standard/` 中对应标准 |
 | 旧代码或参考项目 | [迁移规范](docs/spec/migration.md)、[依赖规范](docs/spec/dependencies.md) |
 | 模块代码审查 | [审查规范](docs/spec/review.md)、[总体架构](docs/spec/architecture.md)、对应模块 spec |
+| 跨库对比（三方参考） | [迁移规范](docs/spec/migration.md)、`docs/reference-snapshots.md`、对应模块 spec、`references/` 下对应参考实现 |
 
 ## 渐进式披露
 
 1. 先读取与当前任务直接相关的规范。
 2. 规范引用其他文档且影响当前决策时，再读取该文档。
-3. 不以 README、旧实现或参考项目覆盖 spec。
+3. 格式事实以 `docs/office-standard/` 中对应版本的官方标准为准；不以 README、旧实现或参考项目覆盖标准、spec 或 ADR。
 4. 完整会议事实源仅用于追溯；日常实现优先使用已对齐的 spec 与 ADR。

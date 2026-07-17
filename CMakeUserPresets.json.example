@@ -1,43 +1,191 @@
+// CMakeUserPresets.json.example
+//
+// Reference example -- adapt paths, compilers, and package managers
+// to your local environment.  Copy this file to CMakeUserPresets.json
+// (or rename the copy) and edit accordingly.
+//
+// This file is written in JSON5 so that comments are allowed.  CMake
+// 3.28+ can consume JSON5 in presets files natively.
+//
+// Key points:
+//   - Compiler path: REQUIRED for MSVC / clang-cl (adjust to your VS
+//     installation or LLVM directory).  GCC / Clang (non-MSVC) usually
+//     work from PATH and need only "CMAKE_CXX_COMPILER": "g++"/"clang++".
+//   - Package manager: OPTIONAL.  vcpkg, Conan, or CMake FetchContent
+//     are all valid.  Omit CMAKE_TOOLCHAIN_FILE and VCPKG_* if you
+//     manage dependencies elsewhere.
+//   - Environment block: OPTIONAL.  Only needed if the compiler/linker
+//     directories are not already in your system PATH, INCLUDE, LIB.
+//     vcvarsall.bat or equivalent may already set these.
+//   - Toolset: OPTIONAL.  v143/v144/v145 for MSVC, or omit for Clang/GCC.
+//   - Build type: set CMAKE_BUILD_TYPE in each visible preset
+//     (Debug / Release / RelWithDebInfo).
+
 {
-  "version": 9,
-  "configurePresets": [
-    {
-      "name": "msvc-vcpkg-base",
-      "hidden": true,
-      "inherits": "msvc-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "installDir": "${sourceDir}/out/install/msvc_vcpkg_x64",
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
-        "XMOLE2_VERIFY_DEPENDENCIES": "ON"
-      }
-    },
-    {
-      "name": "msvc_vcpkg_x64_debug",
-      "inherits": "msvc-vcpkg-base",
-      "displayName": "x64 Debug MSVC with vcpkg",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "build-msvc_vcpkg_x64_debug",
-      "configurePreset": "msvc_vcpkg_x64_debug"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "test-msvc_vcpkg_x64_debug",
-      "configurePreset": "msvc_vcpkg_x64_debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    }
-  ]
+    "version": 9,
+
+    // -----------------------------------------------------------------
+    // Configure presets
+    // -----------------------------------------------------------------
+    "configurePresets": [
+
+        // ---- Hidden base: compiler location, architecture, toolset ----
+        //
+        // Inherit from one of the hidden compiler bases in
+        // CMakePresets.json:
+        //   msvc-base    -- cl.exe, Windows only
+        //   gcc-base     -- g++, cross-platform
+        //   clang-base   -- clang++, cross-platform
+        //   clang-cl-base -- clang-cl.exe, Windows only
+        //
+        // Replace "msvc-base" below with the base that matches your
+        // compiler.
+        {
+            "name": "my-local-base",
+            "hidden": true,
+            "inherits": "msvc-base",
+
+            // Target architecture.  "strategy": "external" passes the
+            // value to the generator (Ninja / Visual Studio).
+            // Omit for single-arch generators like Ninja if the
+            // compiler already targets the right arch.
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+
+            // Where final deployable artifacts land.
+            "installDir": "${sourceDir}/out/install/msvc_x64",
+
+            "cacheVariables": {
+                // --- Compiler (REQUIRED for MSVC/clang-cl) ---
+                // Adjust the absolute path to match your VS installation,
+                // LLVM directory, or SDK layout.  For GCC/Clang you can
+                // usually just set:
+                //   "CMAKE_CXX_COMPILER": "g++"
+                // and let PATH resolve it.
+                "CMAKE_CXX_COMPILER": "D:/Dev/VS2022/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64/cl.exe",
+
+                // --- Package manager (OPTIONAL) ---
+                //
+                // vcpkg example (uncomment and adjust if using vcpkg):
+                // "CMAKE_TOOLCHAIN_FILE": "C:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                // "VCPKG_MANIFEST_MODE": "OFF",
+                // "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
+                //
+                // Conan users: do NOT set CMAKE_TOOLCHAIN_FILE here.
+                // Instead run:
+                //   conan install . --output-folder=build/conan
+                // and pass the Conan toolchain file on the command line
+                // or via a separate preset.
+                //
+                // FetchContent / find_package users: no special
+                // toolchain file needed; CMake resolves dependencies
+                // directly.
+
+                // Enable dependency verification (OPTIONAL).
+                // When ON, cmake checks that every declared dependency
+                // can be found.
+                "XMOLE2_VERIFY_DEPENDENCIES": "ON"
+            },
+
+            // --- Environment (OPTIONAL) ---
+            //
+            // Only needed if your compiler/linker SDK paths are NOT
+            // already in the system environment (e.g. you did not run
+            // vcvarsall.bat or the compiler is a portable install).
+            //
+            // $penv{...} appends to the current process environment.
+            //"environment": {
+            //    "INCLUDE": "D:/Dev/VS2022/VC/Tools/MSVC/14.38.33130/include;$penv{INCLUDE}",
+            //    "LIB": "D:/Dev/VS2022/VC/Tools/MSVC/14.38.33130/lib/x64;$penv{LIB}",
+            //    "PATH": "D:/Dev/VS2022/VC/Tools/MSVC/14.38.33130/bin/Hostx64/x64;$penv{PATH}"
+            //},
+
+            // --- Toolset (OPTIONAL) ---
+            //
+            // MSVC version: v142 (VS 2019), v143 (VS 2022), v144, v145.
+            // Irrelevant for Clang/GCC -- omit or delete the block.
+            //"toolset": {
+            //    "value": "v143",
+            //    "strategy": "external"
+            //}
+        },
+
+        // ---- Visible: Debug build ----
+        {
+            "name": "msvc_x64_debug",
+            "inherits": "my-local-base",
+            "displayName": "x64 Debug MSVC",
+            "description": "Debug build (no optimizations, full debug symbols)",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+
+        // ---- Visible: Release build ----
+        {
+            "name": "msvc_x64_release",
+            "inherits": "my-local-base",
+            "displayName": "x64 Release MSVC",
+            "description": "Release build (optimized, no debug symbols)",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+
+        // ---- Visible: RelWithDebInfo build ----
+        {
+            "name": "msvc_x64_relwithdebinfo",
+            "inherits": "my-local-base",
+            "displayName": "x64 RelWithDebInfo MSVC",
+            "description": "Optimized build with debug symbols",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        }
+
+        // ---- Clang/GCC example (just uncomment and adapt) ----
+        //
+        // {
+        //     "name": "clang-local-base",
+        //     "hidden": true,
+        //     "inherits": "clang-base",
+        //     "installDir": "${sourceDir}/out/install/clang_x64",
+        //     "cacheVariables": {
+        //         "CMAKE_CXX_COMPILER": "clang++",
+        //         "XMOLE2_VERIFY_DEPENDENCIES": "ON"
+        //     }
+        // },
+        // {
+        //     "name": "clang_x64_debug",
+        //     "inherits": "clang-local-base",
+        //     "displayName": "x64 Debug Clang",
+        //     "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        // }
+    ],
+
+    // -----------------------------------------------------------------
+    // Build presets (optional but convenient)
+    // -----------------------------------------------------------------
+    // Each build preset links a convenient short name to a configure
+    // preset so you can run:
+    //   cmake --build --preset build-msvc_x64_debug
+    "buildPresets": [
+        {
+            "name": "build-msvc_x64_debug",
+            "configurePreset": "msvc_x64_debug",
+            "displayName": "build msvc_x64_debug"
+        },
+        {
+            "name": "build-msvc_x64_release",
+            "configurePreset": "msvc_x64_release",
+            "displayName": "build msvc_x64_release"
+        },
+        {
+            "name": "build-msvc_x64_relwithdebinfo",
+            "configurePreset": "msvc_x64_relwithdebinfo",
+            "displayName": "build msvc_x64_relwithdebinfo"
+        }
+    ]
 }
